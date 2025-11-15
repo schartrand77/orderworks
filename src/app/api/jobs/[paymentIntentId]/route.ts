@@ -5,8 +5,8 @@ interface Params {
   paymentIntentId: string;
 }
 
-export async function GET(_request: NextRequest, context: { params: Params }) {
-  const { paymentIntentId } = context.params;
+export async function GET(_request: NextRequest, context: { params: Promise<Params> }) {
+  const { paymentIntentId } = await context.params;
 
   const job = await prisma.job.findUnique({
     where: { paymentIntentId },

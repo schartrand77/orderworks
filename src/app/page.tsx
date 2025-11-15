@@ -1,8 +1,11 @@
 import { Suspense } from "react";
+import type { JobStatus } from "@/generated/prisma/enums";
 import { prisma } from "@/lib/prisma";
 import { parseJobFilters } from "@/lib/job-query";
 import { JobFilters } from "@/components/job-filters";
 import { JobTable } from "@/components/job-table";
+
+export const dynamic = "force-dynamic";
 
 interface SearchParams {
   [key: string]: string | string[] | undefined;
@@ -39,7 +42,7 @@ function extractSingle(value?: string | string[]) {
 async function JobsSection({ searchParams }: { searchParams?: SearchParams }) {
   const params = toURLSearchParams(searchParams);
   let error: string | null = null;
-  let statuses: string[] = [];
+  let statuses: JobStatus[] = [];
   let createdFrom: Date | undefined;
   let createdTo: Date | undefined;
 

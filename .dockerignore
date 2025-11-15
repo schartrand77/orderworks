@@ -1,0 +1,24 @@
+# Node / Next artifacts
+node_modules
+.next
+out
+dist
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Environment and secrets
+.env
+.env.*
+
+# Git / IDE
+.git
+.gitignore
+.DS_Store
+.vscode
+
+# Prisma client is generated inside the container
+src/generated/prisma

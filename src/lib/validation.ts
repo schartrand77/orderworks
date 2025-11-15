@@ -22,7 +22,7 @@ export const jobPayloadSchema = z.object({
   currency: z.string().min(1, "currency is required"),
   lineItems: z.array(z.unknown()),
   shipping: z.unknown().optional().nullable(),
-  metadata: z.record(z.unknown()).optional().nullable(),
+  metadata: z.record(z.string(), z.unknown()).optional().nullable(),
   userId: z.string().min(1).optional().nullable(),
   customerEmail: z.string().email().optional().nullable(),
   createdAt: dateLike,

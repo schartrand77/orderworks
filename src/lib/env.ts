@@ -20,7 +20,7 @@ export function getEnv(): Env {
   });
 
   if (!parsed.success) {
-    throw new Error(parsed.error.errors.map((error) => `${error.path.join(".")}: ${error.message}`).join("; "));
+    throw new Error(parsed.error.issues.map((issue) => `${issue.path.join(".")}: ${issue.message}`).join("; "));
   }
 
   cached = parsed.data;

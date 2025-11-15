@@ -51,6 +51,37 @@ npm run dev
 
 The admin UI and API will be available at [http://localhost:3000](http://localhost:3000).
 
+## Docker / Unraid deployment
+
+The repo ships with a multi-stage `Dockerfile` that builds a production image suitable for Unraid or any Docker host. The image runs database migrations on every start (set `SKIP_DB_MIGRATE=1` to skip).
+
+Build the image:
+
+```bash
+docker build -t orderworks:latest .
+```
+
+Run migrations manually (optional because the entrypoint runs them automatically):
+
+```bash
+docker run --rm \
+  -e DATABASE_URL="postgresql://USER:PASSWORD@HOST:PORT/orderworks?schema=public" \
+  orderworks:latest npm run db:migrate
+```
+
+Start the container (example Unraid template command):
+
+```bash
+docker run -d \
+  --name orderworks \
+  -p 3000:3000 \
+  -e DATABASE_URL="postgresql://USER:PASSWORD@HOST:PORT/orderworks?schema=public" \
+  -e MAKERWORKS_WEBHOOK_SECRET="super-secret-token" \
+  orderworks:latest
+```
+
+Expose the mapped port through Unraid's web UI and configure the two environment variables in the container template so MakerWorks webhook requests can be validated and the Prisma client can reach Postgres.
+
 ## API reference
 
 ### POST `/api/makerworks/jobs`

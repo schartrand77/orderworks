@@ -1,14 +1,20 @@
-import type { JobStatus } from "@/generated/prisma/client";
+import { JobStatus as JobStatusEnum } from "@/generated/prisma/enums";
+import type { JobStatus } from "@/generated/prisma/enums";
+
+export type StatusQueryValue = Lowercase<JobStatus>;
 
 export const STATUS_LABELS: Record<JobStatus, string> = {
-  new: "New",
-  processing: "Processing",
-  done: "Done",
+  [JobStatusEnum.NEW]: "New",
+  [JobStatusEnum.PROCESSING]: "Processing",
+  [JobStatusEnum.DONE]: "Done",
 };
 
 export const STATUS_OPTIONS = (
   Object.entries(STATUS_LABELS) as Array<[JobStatus, string]>
-).map(([value, label]) => ({ value, label }));
+).map(([value, label]) => ({
+  value: value.toLowerCase() as StatusQueryValue,
+  label,
+}));
 
 export function formatCurrency(totalCents: number, currency: string) {
   try {

@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { JobStatus } from "@/generated/prisma/enums";
 import { completeJobSchema, normalizeCompletionPayload } from "@/lib/validation";
 
 interface Params {
   paymentIntentId: string;
 }
 
-export async function POST(request: NextRequest, context: { params: Params }) {
-  const { paymentIntentId } = context.params;
+export async function POST(request: NextRequest, context: { params: Promise<Params> }) {
+  const { paymentIntentId } = await context.params;
 
   const job = await prisma.job.findUnique({ where: { paymentIntentId } });
   if (!job) {
@@ -31,7 +32,7 @@ export async function POST(request: NextRequest, context: { params: Params }) {
   const updated = await prisma.job.update({
     where: { paymentIntentId },
     data: {
-      status: "done",
+      status: JobStatus.DONE,
       ...(data.invoiceUrl !== undefined ? { invoiceUrl: data.invoiceUrl } : {}),
       ...(data.notes !== undefined ? { notes: data.notes } : {}),
     },

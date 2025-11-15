@@ -1,8 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Prisma } from "@/generated/prisma/client";
+import { JobStatus } from "@/generated/prisma/enums";
 import { prisma } from "@/lib/prisma";
 import { getEnv } from "@/lib/env";
 import { jobPayloadSchema } from "@/lib/validation";
+
+function jsonOrNull(value: unknown): Prisma.InputJsonValue | Prisma.JsonNullValueInput | undefined {
+  if (value === null) {
+    return Prisma.JsonNull;
+  }
+  if (value === undefined) {
+    return undefined;
+  }
+  return value as Prisma.InputJsonValue;
+}
 
 export async function POST(request: NextRequest) {
   const { MAKERWORKS_WEBHOOK_SECRET } = getEnv();
@@ -38,8 +49,8 @@ export async function POST(request: NextRequest) {
   const payload = parsed.data;
   const makerworksCreatedAt = payload.createdAt;
   const lineItems = payload.lineItems as Prisma.InputJsonValue;
-  const shipping = (payload.shipping ?? null) as Prisma.InputJsonValue | null;
-  const metadata = (payload.metadata ?? null) as Prisma.InputJsonValue | null;
+  const shipping = jsonOrNull(payload.shipping);
+  const metadata = jsonOrNull(payload.metadata);
 
   const existing = await prisma.job.findUnique({ where: { id: payload.id } });
 
@@ -56,7 +67,7 @@ export async function POST(request: NextRequest) {
       userId: payload.userId ?? null,
       customerEmail: payload.customerEmail ?? null,
       makerworksCreatedAt,
-      status: "new",
+      status: JobStatus.NEW,
     },
     update: {
       paymentIntentId: payload.paymentIntentId,

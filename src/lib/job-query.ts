@@ -1,5 +1,5 @@
 import { STATUS_LABELS } from "@/lib/format";
-import type { JobStatus } from "@/generated/prisma/client";
+import type { JobStatus } from "@/generated/prisma/enums";
 
 const VALID_STATUSES = new Set(Object.keys(STATUS_LABELS));
 
@@ -15,15 +15,16 @@ export function parseJobFilters(params: URLSearchParams): JobFilters {
     .flatMap((value) =>
       value
         .split(",")
-        .map((status) => status.trim().toLowerCase())
-        .filter(Boolean),
-    )
-    .map((status) => {
-      if (!VALID_STATUSES.has(status)) {
-        throw new Error(`Invalid status filter: ${status}`);
-      }
-      return status as JobStatus;
-    });
+    .map((status) => status.trim())
+    .filter(Boolean),
+  )
+  .map((status) => {
+    const normalized = status.toUpperCase();
+    if (!VALID_STATUSES.has(normalized)) {
+      throw new Error(`Invalid status filter: ${status}`);
+    }
+    return normalized as JobStatus;
+  });
 
   const createdFrom = parseDate(params.get("createdFrom"));
   const createdTo = parseDate(params.get("createdTo"));

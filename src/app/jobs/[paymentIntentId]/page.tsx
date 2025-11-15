@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { JobStatus as JobStatusEnum } from "@/generated/prisma/enums";
 import { prisma } from "@/lib/prisma";
 import { JobDetail } from "@/components/job-detail";
 import { CompleteJobForm } from "@/components/complete-job-form";
@@ -16,7 +17,7 @@ export default async function JobDetailPage({ params }: PageProps) {
     notFound();
   }
 
-  const isDone = job.status === "done";
+  const isDone = job.status === JobStatusEnum.DONE;
 
   return (
     <main className="mx-auto flex w-full max-w-5xl flex-col gap-8 px-6 py-10">
