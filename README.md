@@ -51,6 +51,27 @@ npm run dev
 
 The admin UI and API will be available at [http://localhost:3000](http://localhost:3000).
 
+## Docker Compose (local dev)
+
+If you prefer to run everything in containers during development, a `docker-compose.dev.yml` file wires up the Next.js dev server and a local Postgres instance:
+
+```bash
+docker compose -f docker-compose.dev.yml up --build
+```
+
+This starts:
+
+- `app` �?" `node:20` container running `npm run dev` with your working tree bind-mounted for hot reloads.
+- `db` �?" PostgreSQL 16 with credentials `orderworks` / `orderworks` and data persisted in the `postgres-data` volume.
+
+The compose file supplies `DATABASE_URL` and a default `MAKERWORKS_WEBHOOK_SECRET=dev-secret`; update those in `docker-compose.dev.yml` if you need different values. Stop the stack with:
+
+```bash
+docker compose -f docker-compose.dev.yml down
+```
+
+Add `-v` to the command above if you want to reset the Postgres volume between runs.
+
 ## Docker / Unraid deployment
 
 The repo ships with a multi-stage `Dockerfile` that builds a production image suitable for Unraid or any Docker host. The image runs database migrations on every start (set `SKIP_DB_MIGRATE=1` to skip).
