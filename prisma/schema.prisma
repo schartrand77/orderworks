@@ -1,0 +1,39 @@
+// Prisma schema for OrderWorks job management
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum JobStatus {
+  NEW         @map("new")
+  PROCESSING  @map("processing")
+  DONE        @map("done")
+}
+
+model Job {
+  id               String     @id
+  paymentIntentId  String     @unique
+  totalCents       Int
+  currency         String
+  lineItems        Json
+  shipping         Json?
+  metadata         Json?
+  userId           String?
+  customerEmail    String?
+  makerworksCreatedAt DateTime @map("makerworks_created_at")
+  status           JobStatus  @default(NEW)
+  invoiceUrl       String?
+  notes            String?
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
+
+  @@map("jobs")
+  @@index([status])
+  @@index([makerworksCreatedAt])
+}
