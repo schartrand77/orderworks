@@ -1,3 +1,4 @@
+import Image from "next/image";
 import type { Job } from "@/generated/prisma/client";
 import { formatCurrency, formatDate, STATUS_LABELS } from "@/lib/format";
 
@@ -12,6 +13,16 @@ export function JobDetail({ job }: Props) {
 
   return (
     <section className="space-y-6 rounded-lg border border-zinc-200 bg-white p-6">
+      <div className="overflow-hidden rounded-md border border-zinc-100">
+        <Image
+          src="/makerworks-letterhead.svg"
+          alt="MakerWorks letterhead"
+          width={1600}
+          height={360}
+          className="h-auto w-full"
+          priority
+        />
+      </div>
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="text-lg font-semibold text-zinc-900">Job summary</h2>
@@ -22,6 +33,10 @@ export function JobDetail({ job }: Props) {
         </span>
       </header>
       <dl className="grid gap-4 text-sm sm:grid-cols-2">
+        <div>
+          <dt className="font-medium text-zinc-700">Queue position</dt>
+          <dd className="text-zinc-700">#{job.queuePosition}</dd>
+        </div>
         <div>
           <dt className="font-medium text-zinc-700">Payment intent</dt>
           <dd className="font-mono text-xs text-zinc-700">{job.paymentIntentId}</dd>

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { Job } from "@/generated/prisma/client";
 import { formatCurrency, formatDate, STATUS_LABELS } from "@/lib/format";
+import { JobQueueControls } from "@/components/job-queue-controls";
 
 interface Props {
   jobs: Job[];
@@ -20,6 +21,7 @@ export function JobTable({ jobs }: Props) {
       <table className="min-w-full divide-y divide-zinc-200 text-left text-sm">
         <thead className="bg-zinc-50">
           <tr>
+            <th className="px-4 py-3 font-medium text-zinc-600">Queue</th>
             <th className="px-4 py-3 font-medium text-zinc-600">MakerWorks ID</th>
             <th className="px-4 py-3 font-medium text-zinc-600">Payment Intent</th>
             <th className="px-4 py-3 font-medium text-zinc-600">Status</th>
@@ -29,8 +31,18 @@ export function JobTable({ jobs }: Props) {
           </tr>
         </thead>
         <tbody className="divide-y divide-zinc-200">
-          {jobs.map((job) => (
+          {jobs.map((job, index) => (
             <tr key={job.id} className="hover:bg-zinc-50">
+              <td className="px-4 py-3">
+                <div className="flex items-center gap-3">
+                  <span className="text-sm font-semibold text-zinc-700">#{job.queuePosition}</span>
+                  <JobQueueControls
+                    paymentIntentId={job.paymentIntentId}
+                    disableUp={index === 0}
+                    disableDown={index === jobs.length - 1}
+                  />
+                </div>
+              </td>
               <td className="px-4 py-3 text-zinc-900">{job.id}</td>
               <td className="px-4 py-3 font-mono text-xs text-zinc-700">
                 {job.paymentIntentId}

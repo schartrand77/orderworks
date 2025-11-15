@@ -11,9 +11,9 @@ datasource db {
 }
 
 enum JobStatus {
-  NEW         @map("new")
-  PROCESSING  @map("processing")
-  DONE        @map("done")
+  PENDING   @map("pending")
+  PRINTING  @map("printing")
+  COMPLETED @map("completed")
 }
 
 model Job {
@@ -27,13 +27,15 @@ model Job {
   userId           String?
   customerEmail    String?
   makerworksCreatedAt DateTime @map("makerworks_created_at")
-  status           JobStatus  @default(NEW)
+  status           JobStatus  @default(PENDING)
   invoiceUrl       String?
   notes            String?
+  queuePosition    Int        @default(0) @map("queue_position")
   createdAt        DateTime   @default(now())
   updatedAt        DateTime   @updatedAt
 
   @@map("jobs")
   @@index([status])
   @@index([makerworksCreatedAt])
+  @@index([queuePosition])
 }

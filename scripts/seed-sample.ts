@@ -1,0 +1,83 @@
+import "dotenv/config";
+import { PrismaClient } from "../src/generated/prisma/client";
+import { JobStatus } from "../src/generated/prisma/enums";
+
+const prisma = new PrismaClient();
+
+async function main() {
+const sampleJob = {
+  id: "makerworks-sample-job",
+    paymentIntentId: "pi_sample_123456",
+    totalCents: 18500,
+    currency: "usd",
+    lineItems: [
+      {
+        description: "3D printed enclosure",
+        quantity: 1,
+        unitPriceCents: 12500,
+        material: "PLA",
+      },
+      {
+        description: "Laser cut acrylic panels",
+        quantity: 2,
+        unitPriceCents: 3000,
+        color: "smoke gray",
+      },
+    ],
+    shipping: {
+      service: "UPS Ground",
+      tracking: null,
+      address: {
+        name: "Ada Lovelace",
+        street: "123 Maker Lane",
+        city: "Ann Arbor",
+        state: "MI",
+        postalCode: "48103",
+        country: "US",
+      },
+    },
+    metadata: {
+      project: "Sample MakerWorks Job",
+      priority: "rush",
+    },
+    userId: "user_sample_001",
+    customerEmail: "ada.lovelace@example.com",
+    makerworksCreatedAt: new Date("2025-01-01T12:00:00Z"),
+    status: JobStatus.PENDING,
+    invoiceUrl: "https://invoices.example.com/makerworks-sample-job",
+    notes: "Sample job inserted via npm run seed:sample",
+  };
+
+  const existing = await prisma.job.findUnique({
+    where: { id: sampleJob.id },
+  });
+
+  let createQueuePosition: number | undefined;
+  if (!existing) {
+    const aggregate = await prisma.job.aggregate({ _max: { queuePosition: true } });
+    createQueuePosition = (aggregate._max.queuePosition ?? 0) + 1;
+  }
+
+  const job = await prisma.job.upsert({
+    where: { id: sampleJob.id },
+    create:
+      createQueuePosition === undefined
+        ? sampleJob
+        : {
+            ...sampleJob,
+            queuePosition: createQueuePosition,
+          },
+    update: sampleJob,
+  });
+
+  console.log(`Seeded sample job: ${job.id}`);
+}
+
+main()
+  .catch((error) => {
+    console.error("Failed to seed sample job:", error);
+    process.exit(1);
+  })
+  .finally(async () => {
+    await prisma.$disconnect();
+  });

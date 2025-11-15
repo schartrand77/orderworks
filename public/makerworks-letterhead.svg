@@ -1,0 +1,29 @@
+<svg width="1600" height="360" viewBox="0 0 1600 360" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="MakerWorks letterhead">
+  <defs>
+    <linearGradient id="mw-gradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#2b2b2b"/>
+      <stop offset="100%" stop-color="#1a1a1a"/>
+    </linearGradient>
+    <linearGradient id="mw-highlight" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#f4f4f4" stop-opacity="0"/>
+      <stop offset="40%" stop-color="#f4f4f4" stop-opacity="0.4"/>
+      <stop offset="60%" stop-color="#f4f4f4" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="#f4f4f4" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <rect width="1600" height="360" fill="url(#mw-gradient)"/>
+  <rect x="700" y="110" width="720" height="140" fill="url(#mw-highlight)" opacity="0.35"/>
+  <g transform="translate(120, 80)">
+    <circle cx="100" cy="100" r="88" fill="#111" stroke="#f6f6f6" stroke-width="12"/>
+    <rect x="70" y="40" width="60" height="100" rx="8" fill="#f6f6f6"/>
+    <rect x="85" y="50" width="30" height="50" fill="#2b2b2b"/>
+    <rect x="90" y="120" width="20" height="30" fill="#2b2b2b"/>
+    <rect x="70" y="150" width="60" height="20" rx="4" fill="#f6f6f6"/>
+    <text x="215" y="116" font-family="Arial, Helvetica, sans-serif" font-size="96" fill="#f6f6f6" letter-spacing="6">
+      MAKERWORKS
+    </text>
+    <text x="220" y="156" font-family="Arial, Helvetica, sans-serif" font-size="32" fill="#c0c0c0" letter-spacing="5">
+      ORDERWORKS JOB DASHBOARD
+    </text>
+  </g>
+</svg>

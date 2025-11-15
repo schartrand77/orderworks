@@ -1,4 +1,4 @@
-# OrderWorks
+﻿# OrderWorks
 
 OrderWorks ingests MakerWorks fabrication job forms, persists them in Postgres, and provides an admin dashboard for reviewing and
  completing work.
@@ -15,9 +15,11 @@ Create a `.env` file (or set environment variables in your deployment platform) 
 ```env
 DATABASE_URL="postgresql://USER:PASSWORD@HOST:PORT/orderworks?schema=public"
 MAKERWORKS_WEBHOOK_SECRET="super-secret-token"
+RESEND_API_KEY="resend_api_key"
+RECEIPT_FROM_EMAIL="OrderWorks Receipts <receipts@example.com>"
 ```
 
-The same `MAKERWORKS_WEBHOOK_SECRET` must be configured in MakerWorks when registering the webhook.
+The same `MAKERWORKS_WEBHOOK_SECRET` must be configured in MakerWorks when registering the webhook. Configure `RESEND_API_KEY` and `RECEIPT_FROM_EMAIL` to enable receipt emails whenever a job is marked as completed.
 
 ## Install dependencies
 
@@ -41,6 +43,16 @@ DATABASE_URL="postgresql://USER:PASSWORD@HOST:PORT/orderworks?schema=public" npm
 
 The project ships with an initial migration (`prisma/migrations`) that creates the `jobs` table and associated enum.
 
+## Sample data
+
+Seed a sample MakerWorks job (id `makerworks-sample-job`) that you can inspect in the UI:
+
+```bash
+npm run seed:sample
+```
+
+The command is idempotent, so you can re-run it any time to reset the sample job's data.
+
 ## Development server
 
 Start the Next.js server:
@@ -53,24 +65,24 @@ The admin UI and API will be available at [http://localhost:3000](http://localho
 
 ## Docker Compose (local dev)
 
-If you prefer to run everything in containers during development, a `docker-compose.dev.yml` file wires up the Next.js dev server and a local Postgres instance:
+If you prefer to run everything in containers during development, use the provided `docker-compose.yml` to run the Next.js dev server and a local Postgres instance:
 
 ```bash
-docker compose -f docker-compose.dev.yml up --build
+docker compose up --build
 ```
 
 This starts:
 
-- `app` �?" `node:20` container running `npm run dev` with your working tree bind-mounted for hot reloads.
-- `db` �?" PostgreSQL 16 with credentials `orderworks` / `orderworks` and data persisted in the `postgres-data` volume.
+- `app` — `node:20` container running `npm run dev` with your working tree bind-mounted for hot reloads. It automatically runs `npm install`, `npm run db:generate`, and `npm run db:migrate` before the dev server launches, so the schema is applied. The server listens on port `3000` in the container and is exposed at [http://localhost:3001](http://localhost:3001).
+- `db` — PostgreSQL 16 with credentials `orderworks` / `orderworks`, exposed at `localhost:5433`, and data persisted in the `postgres-data` volume.
 
-The compose file supplies `DATABASE_URL` and a default `MAKERWORKS_WEBHOOK_SECRET=dev-secret`; update those in `docker-compose.dev.yml` if you need different values. Stop the stack with:
+Environment variables (e.g., `DATABASE_URL`, default `MAKERWORKS_WEBHOOK_SECRET=dev-secret`) live inside `docker-compose.yml`; tweak them there if needed. Stop the stack with:
 
 ```bash
-docker compose -f docker-compose.dev.yml down
+docker compose down
 ```
 
-Add `-v` to the command above if you want to reset the Postgres volume between runs.
+Add `-v` if you want to reset the Postgres volume between runs.
 
 ## Docker / Unraid deployment
 
@@ -128,25 +140,26 @@ The endpoint creates or updates the stored job record and returns the persisted 
 
 Lists stored jobs with optional filters:
 
-- `status` – one of `new`, `processing`, `done`. Multiple values can be supplied via repeated parameters or comma separation.
+- `status` – one of `pending`, `printing`, `completed`. Multiple values can be supplied via repeated parameters or comma separation.
 - `createdFrom` / `createdTo` – ISO date strings used to bound the MakerWorks `createdAt` timestamp.
 
 ### GET `/api/jobs/:paymentIntentId`
 
 Returns the stored job for the given payment intent id.
 
-### POST `/api/jobs/:paymentIntentId/complete`
+### PATCH `/api/jobs/:paymentIntentId`
 
-Marks the job as `done` and records optional `invoiceUrl` + `notes`. Request body:
+Updates a job's status (pending, printing, or completed) plus optional `invoiceUrl` and `notes`. When the status transitions to `completed`, a receipt email is sent to the job's `customerEmail`.
 
 ```json
 {
+  "status": "completed",
   "invoiceUrl": "https://invoices.example.com/123",
   "notes": "Optional completion notes"
 }
 ```
 
-Omit `invoiceUrl` or send an empty string to leave it unchanged/clear it.
+Omit `invoiceUrl` or send an empty string to leave it unchanged/clear it. Requests missing a customer email or the required email environment variables will fail when attempting to complete a job.
 
 All API responses are JSON. Validation errors return HTTP 422 with details.
 
@@ -156,14 +169,18 @@ Navigate to the root path `/` to view the OrderWorks admin dashboard:
 
 - Filter jobs by status or MakerWorks creation date.
 - Inspect line items, shipping details, and metadata on each job.
+- Reorder the live job queue by using the ↑ / ↓ buttons in the table; queue position is shown for every job and can be adjusted to prioritize work.
 - Open a job detail view (`/jobs/:paymentIntentId`) to review all data and mark the job complete.
 
 ## MakerWorks configuration
 
 Configure the MakerWorks webhook to point at your deployment:
 
-- `ORDERWORKS_WEBHOOK_URL` → `https://orderworks.example.com/api/makerworks/jobs`
-- `ORDERWORKS_WEBHOOK_SECRET` → value matching `MAKERWORKS_WEBHOOK_SECRET`
+- `ORDERWORKS_WEBHOOK_URL` â†’ `https://orderworks.example.com/api/makerworks/jobs`
+- `ORDERWORKS_WEBHOOK_SECRET` â†’ value matching `MAKERWORKS_WEBHOOK_SECRET`
 
 MakerWorks will send payloads to the webhook endpoint. OrderWorks validates the shared secret before storing or updating jobs.
+
+
+
 

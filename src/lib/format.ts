@@ -4,9 +4,9 @@ import type { JobStatus } from "@/generated/prisma/enums";
 export type StatusQueryValue = Lowercase<JobStatus>;
 
 export const STATUS_LABELS: Record<JobStatus, string> = {
-  [JobStatusEnum.NEW]: "New",
-  [JobStatusEnum.PROCESSING]: "Processing",
-  [JobStatusEnum.DONE]: "Done",
+  [JobStatusEnum.PENDING]: "Pending",
+  [JobStatusEnum.PRINTING]: "Printing",
+  [JobStatusEnum.COMPLETED]: "Completed",
 };
 
 export const STATUS_OPTIONS = (

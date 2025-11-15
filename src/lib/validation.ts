@@ -1,4 +1,6 @@
 import { z } from "zod";
+import type { JobStatus } from "@/generated/prisma/enums";
+import { JobStatus as JobStatusEnum } from "@/generated/prisma/enums";
 
 const numeric = z
   .union([z.number(), z.string()])
@@ -30,19 +32,29 @@ export const jobPayloadSchema = z.object({
 
 export type JobPayload = z.infer<typeof jobPayloadSchema>;
 
-export const completeJobSchema = z.object({
+const jobStatusValues = ["pending", "printing", "completed"] as const;
+type JobStatusInput = (typeof jobStatusValues)[number];
+
+const jobStatusMap: Record<JobStatusInput, JobStatus> = {
+  pending: JobStatusEnum.PENDING,
+  printing: JobStatusEnum.PRINTING,
+  completed: JobStatusEnum.COMPLETED,
+};
+
+export const jobStatusUpdateSchema = z.object({
+  status: z.enum(jobStatusValues),
   invoiceUrl: z.union([z.string().url("invoiceUrl must be a valid URL"), z.literal("")]).optional(),
   notes: z.string().optional(),
 });
 
-export type CompleteJobPayload = z.infer<typeof completeJobSchema>;
+export type JobStatusUpdatePayload = z.infer<typeof jobStatusUpdateSchema>;
 
-export function normalizeCompletionPayload(payload: CompleteJobPayload) {
+export function normalizeJobStatusUpdatePayload(payload: JobStatusUpdatePayload) {
   const trimmedNotes = payload.notes?.trim();
   return {
+    status: jobStatusMap[payload.status],
     invoiceUrl:
       payload.invoiceUrl === undefined ? undefined : payload.invoiceUrl === "" ? null : payload.invoiceUrl,
-    notes:
-      trimmedNotes === undefined ? undefined : trimmedNotes.length === 0 ? null : trimmedNotes,
+    notes: trimmedNotes === undefined ? undefined : trimmedNotes.length === 0 ? null : trimmedNotes,
   } as const;
 }

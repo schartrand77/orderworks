@@ -39,8 +39,9 @@ function extractSingle(value?: string | string[]) {
   return Array.isArray(value) ? value[value.length - 1] : value;
 }
 
-async function JobsSection({ searchParams }: { searchParams?: SearchParams }) {
-  const params = toURLSearchParams(searchParams);
+async function JobsSection({ searchParams }: { searchParams?: Promise<SearchParams> }) {
+  const resolvedSearchParams = searchParams ? await searchParams : undefined;
+  const params = toURLSearchParams(resolvedSearchParams);
   let error: string | null = null;
   let statuses: JobStatus[] = [];
   let createdFrom: Date | undefined;
@@ -67,12 +68,15 @@ async function JobsSection({ searchParams }: { searchParams?: SearchParams }) {
           }
         : {}),
     },
-    orderBy: { makerworksCreatedAt: "desc" },
+    orderBy: [
+      { queuePosition: "asc" },
+      { makerworksCreatedAt: "desc" },
+    ],
   });
 
-  const statusValue = extractSingle(searchParams?.status);
-  const createdFromValue = extractSingle(searchParams?.createdFrom);
-  const createdToValue = extractSingle(searchParams?.createdTo);
+  const statusValue = extractSingle(resolvedSearchParams?.status);
+  const createdFromValue = extractSingle(resolvedSearchParams?.createdFrom);
+  const createdToValue = extractSingle(resolvedSearchParams?.createdTo);
 
   return (
     <div className="space-y-6">
@@ -85,7 +89,7 @@ async function JobsSection({ searchParams }: { searchParams?: SearchParams }) {
   );
 }
 
-export default function Page({ searchParams }: { searchParams?: SearchParams }) {
+export default function Page({ searchParams }: { searchParams?: Promise<SearchParams> }) {
   return (
     <main className="mx-auto flex w-full max-w-6xl flex-col gap-8 px-6 py-10">
       <div className="space-y-1">

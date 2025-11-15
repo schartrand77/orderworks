@@ -5,6 +5,13 @@ import { prisma } from "@/lib/prisma";
 import { getEnv } from "@/lib/env";
 import { jobPayloadSchema } from "@/lib/validation";
 
+async function getNextQueuePosition() {
+  const result = await prisma.job.aggregate({
+    _max: { queuePosition: true },
+  });
+  return (result._max.queuePosition ?? 0) + 1;
+}
+
 function jsonOrNull(value: unknown): Prisma.InputJsonValue | Prisma.JsonNullValueInput | undefined {
   if (value === null) {
     return Prisma.JsonNull;
@@ -54,6 +61,8 @@ export async function POST(request: NextRequest) {
 
   const existing = await prisma.job.findUnique({ where: { id: payload.id } });
 
+  const queuedPosition = existing?.queuePosition ?? (await getNextQueuePosition());
+
   const job = await prisma.job.upsert({
     where: { id: payload.id },
     create: {
@@ -67,7 +76,8 @@ export async function POST(request: NextRequest) {
       userId: payload.userId ?? null,
       customerEmail: payload.customerEmail ?? null,
       makerworksCreatedAt,
-      status: JobStatus.NEW,
+      queuePosition: queuedPosition,
+      status: JobStatus.PENDING,
     },
     update: {
       paymentIntentId: payload.paymentIntentId,
