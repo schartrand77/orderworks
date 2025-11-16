@@ -14,9 +14,7 @@ ENV NEXT_TELEMETRY_DISABLED=1
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 ARG DATABASE_URL="postgresql://placeholder:placeholder@localhost:5432/orderworks?schema=public"
-ARG MAKERWORKS_WEBHOOK_SECRET="development-secret"
 ENV DATABASE_URL=${DATABASE_URL}
-ENV MAKERWORKS_WEBHOOK_SECRET=${MAKERWORKS_WEBHOOK_SECRET}
 RUN npm run db:generate
 RUN npm run build
 RUN npm prune --omit=dev
