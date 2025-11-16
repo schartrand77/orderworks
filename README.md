@@ -15,11 +15,19 @@ Create a `.env` file (or set environment variables in your deployment platform) 
 ```env
 DATABASE_URL="postgresql://USER:PASSWORD@HOST:PORT/orderworks?schema=public"
 MAKERWORKS_WEBHOOK_SECRET="super-secret-token"
-RESEND_API_KEY="resend_api_key"
-RECEIPT_FROM_EMAIL="OrderWorks Receipts <receipts@example.com>"
+RECEIPT_FROM_EMAIL="MakerWorks Receipts <no-reply@makerworks.app>"
+RECEIPT_REPLY_TO_EMAIL="MakerWorks <info@makerworks.app>"
+# Resend transport (optional)
+RESEND_API_KEY=""
+# SMTP transport (optional; use if not configuring Resend)
+SMTP_HOST="smtp.example.com"
+SMTP_PORT="587"
+SMTP_USER="smtp-username"
+SMTP_PASSWORD="smtp-password"
+SMTP_SECURE="false"
 ```
 
-The same `MAKERWORKS_WEBHOOK_SECRET` must be configured in MakerWorks when registering the webhook. Configure `RESEND_API_KEY` and `RECEIPT_FROM_EMAIL` to enable receipt emails whenever a job is marked as completed.
+The same `MAKERWORKS_WEBHOOK_SECRET` must be configured in MakerWorks when registering the webhook. Provide `RECEIPT_FROM_EMAIL` plus either `RESEND_API_KEY` or the SMTP variables to enable receipt emails whenever a job is marked as completed. Leave `RESEND_API_KEY` blank if you plan to send mail only via SMTP. Set `RECEIPT_REPLY_TO_EMAIL` if replies should route to a different mailbox (e.g., `info@makerworks.app`).
 
 ## Install dependencies
 

@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import type { JobStatus } from "@/generated/prisma/enums";
 import { STATUS_LABELS, type StatusQueryValue } from "@/lib/format";
+import { useNotifications } from "@/components/notifications-provider";
 
 interface Props {
   paymentIntentId: string;
@@ -34,7 +35,7 @@ export function JobStatusForm({
   const [notes, setNotes] = useState(defaultNotes ?? "");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
+  const { notify } = useNotifications();
 
   const requiresReceipt = status === "completed";
   const hasCustomerEmail = Boolean(customerEmail);
@@ -54,7 +55,6 @@ export function JobStatusForm({
     event.preventDefault();
     setIsSubmitting(true);
     setError(null);
-    setSuccess(null);
 
     try {
       const response = await fetch(`/api/jobs/${encodeURIComponent(paymentIntentId)}`, {
@@ -73,10 +73,24 @@ export function JobStatusForm({
       setStatus(nextStatus);
       setInvoiceUrl(body.job.invoiceUrl ?? "");
       setNotes(body.job.notes ?? "");
-      setSuccess(nextStatus === "completed" ? "Job completed and receipt sent" : "Job status updated");
+      const updatedJobEmail =
+        typeof body.job?.customerEmail === "string" ? (body.job.customerEmail as string) : null;
+      if (nextStatus === "completed") {
+        const recipient = updatedJobEmail ?? customerEmail;
+        notify({
+          type: "success",
+          message: recipient
+            ? `Job completed. Receipt emailed to ${recipient}.`
+            : "Job completed and receipt email sent.",
+        });
+      } else {
+        notify({ type: "success", message: "Job status updated." });
+      }
       router.refresh();
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Unexpected error");
+      const message = cause instanceof Error ? cause.message : "Unexpected error";
+      setError(message);
+      notify({ type: "error", message });
     } finally {
       setIsSubmitting(false);
     }
@@ -134,7 +148,6 @@ export function JobStatusForm({
       </div>
       {completionHint ? <p className="text-sm text-zinc-600">{completionHint}</p> : null}
       {error ? <p className="text-sm text-red-600">{error}</p> : null}
-      {success ? <p className="text-sm text-green-600">{success}</p> : null}
       <button
         type="submit"
         disabled={isSubmitting || (requiresReceipt && !hasCustomerEmail)}

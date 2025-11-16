@@ -41,7 +41,7 @@ const sampleJob = {
       priority: "rush",
     },
     userId: "user_sample_001",
-    customerEmail: "ada.lovelace@example.com",
+    customerEmail: "info@makerworks.app",
     makerworksCreatedAt: new Date("2025-01-01T12:00:00Z"),
     status: JobStatus.PENDING,
     invoiceUrl: "https://invoices.example.com/makerworks-sample-job",

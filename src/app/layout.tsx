@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { NotificationsProvider } from "@/components/notifications-provider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -25,19 +26,21 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable} bg-zinc-100 antialiased`}>
-        <div className="min-h-screen">
-          <header className="border-b border-zinc-200 bg-white">
-            <div className="mx-auto flex w-full max-w-6xl flex-col gap-1 px-6 py-4">
-              <span className="text-xs font-semibold uppercase tracking-widest text-zinc-500">
-                OrderWorks
-              </span>
-              <p className="text-sm text-zinc-700">
-                MakerWorks job intake and fulfillment dashboard
-              </p>
-            </div>
-          </header>
-          {children}
-        </div>
+        <NotificationsProvider>
+          <div className="min-h-screen">
+            <header className="border-b border-zinc-200 bg-white">
+              <div className="mx-auto flex w-full max-w-6xl flex-col gap-1 px-6 py-4">
+                <span className="text-xs font-semibold uppercase tracking-widest text-zinc-500">
+                  OrderWorks
+                </span>
+                <p className="text-sm text-zinc-700">
+                  MakerWorks job intake and fulfillment dashboard
+                </p>
+              </div>
+            </header>
+            {children}
+          </div>
+        </NotificationsProvider>
       </body>
     </html>
   );

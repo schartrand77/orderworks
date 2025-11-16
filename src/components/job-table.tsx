@@ -2,6 +2,9 @@ import Link from "next/link";
 import type { Job } from "@/generated/prisma/client";
 import { formatCurrency, formatDate, STATUS_LABELS } from "@/lib/format";
 import { JobQueueControls } from "@/components/job-queue-controls";
+import { SampleJobTestEmailButton } from "@/components/sample-job-test-email-button";
+
+const SAMPLE_JOB_ID = "makerworks-sample-job";
 
 interface Props {
   jobs: Job[];
@@ -59,12 +62,17 @@ export function JobTable({ jobs }: Props) {
                 {formatDate(job.makerworksCreatedAt)}
               </td>
               <td className="px-4 py-3 text-right">
-                <Link
-                  className="text-sm font-medium text-blue-600 hover:text-blue-700"
-                  href={`/jobs/${encodeURIComponent(job.paymentIntentId)}`}
-                >
-                  View
-                </Link>
+                <div className="flex flex-col items-end gap-2">
+                  {job.id === SAMPLE_JOB_ID && job.customerEmail ? (
+                    <SampleJobTestEmailButton recipient={job.customerEmail} />
+                  ) : null}
+                  <Link
+                    className="text-sm font-medium text-blue-600 hover:text-blue-700"
+                    href={`/jobs/${encodeURIComponent(job.paymentIntentId)}`}
+                  >
+                    View
+                  </Link>
+                </div>
               </td>
             </tr>
           ))}
