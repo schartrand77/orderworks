@@ -94,15 +94,15 @@ Add `-v` if you want to reset the Postgres volume between runs.
 
 ## Docker / Unraid deployment
 
-The repo ships with a multi-stage `Dockerfile` that builds a production image suitable for Unraid or any Docker host. The image runs database migrations on every start (set `SKIP_DB_MIGRATE=1` to skip).
+The repo ships with a multi-stage `Dockerfile` that produces a production image suitable for Unraid or any Docker host. The `docker-entrypoint.sh` script applies Prisma migrations on every start—set `SKIP_DB_MIGRATE=1` if you manage migrations separately.
 
-Build the image:
+### Build the image
 
 ```bash
 docker build -t orderworks:latest .
 ```
 
-Run migrations manually (optional because the entrypoint runs them automatically):
+### (Optional) run migrations manually
 
 ```bash
 docker run --rm \
@@ -110,7 +110,7 @@ docker run --rm \
   orderworks:latest npm run db:migrate
 ```
 
-Start the container (example Unraid template command):
+### Start the container
 
 ```bash
 docker run -d \
@@ -121,7 +121,13 @@ docker run -d \
   orderworks:latest
 ```
 
-Expose the mapped port through Unraid's web UI and configure the two environment variables in the container template so MakerWorks webhook requests can be validated and the Prisma client can reach Postgres.
+Configure additional email-related variables if you want completion receipts sent from the container.
+
+### Unraid Community Applications template
+
+An Unraid CA template lives at [`unraid/orderworks.xml`](unraid/orderworks.xml). Add this repository as a template source inside Unraid (**Apps > menu > Manage Template Repositories > Add `https://github.com/schartrand77/orderworks`**) and the OrderWorks template will appear in the Apps tab. Fill in the `DATABASE_URL`, `MAKERWORKS_WEBHOOK_SECRET`, and any optional email variables when creating the container.
+
+The template defaults to pulling `ghcr.io/schartrand77/orderworks:latest`; update the repository tag if you publish the image elsewhere. Detailed Unraid setup notes (building/pushing the image, Postgres pairing, variable descriptions, etc.) live in [`docs/unraid.md`](docs/unraid.md).
 
 ## API reference
 
