@@ -13,32 +13,32 @@ interface Props {
 export function JobTable({ jobs }: Props) {
   if (jobs.length === 0) {
     return (
-      <div className="rounded-lg border border-dashed border-zinc-300 bg-white p-8 text-center text-sm text-zinc-500">
+      <div className="rounded-2xl border border-dashed border-white/20 bg-black/30 p-8 text-center text-sm text-zinc-300">
         No jobs found. Adjust your filters or wait for new MakerWorks submissions.
       </div>
     );
   }
 
   return (
-    <div className="overflow-x-auto rounded-lg border border-zinc-200 bg-white">
-      <table className="min-w-full divide-y divide-zinc-200 text-left text-sm">
-        <thead className="bg-zinc-50">
+    <div className="overflow-x-auto rounded-2xl border border-white/10 bg-[#070707]/90 shadow-[0_30px_80px_rgba(0,0,0,0.65)]">
+      <table className="min-w-full divide-y divide-white/10 text-left text-sm text-zinc-100">
+        <thead className="bg-white/5 text-xs uppercase tracking-[0.25em] text-zinc-400">
           <tr>
-            <th className="px-4 py-3 font-medium text-zinc-600">Queue</th>
-            <th className="px-4 py-3 font-medium text-zinc-600">MakerWorks ID</th>
-            <th className="px-4 py-3 font-medium text-zinc-600">Payment Intent</th>
-            <th className="px-4 py-3 font-medium text-zinc-600">Status</th>
-            <th className="px-4 py-3 font-medium text-zinc-600">Total</th>
-            <th className="px-4 py-3 font-medium text-zinc-600">Created</th>
+            <th className="px-4 py-3 font-medium">Queue</th>
+            <th className="px-4 py-3 font-medium">MakerWorks ID</th>
+            <th className="px-4 py-3 font-medium">Payment Intent</th>
+            <th className="px-4 py-3 font-medium">Status</th>
+            <th className="px-4 py-3 font-medium">Total</th>
+            <th className="px-4 py-3 font-medium">Created</th>
             <th className="px-4 py-3" />
           </tr>
         </thead>
-        <tbody className="divide-y divide-zinc-200">
+        <tbody className="divide-y divide-white/5">
           {jobs.map((job, index) => (
-            <tr key={job.id} className="hover:bg-zinc-50">
-              <td className="px-4 py-3">
+            <tr key={job.id} className="transition hover:bg-white/5">
+              <td className="px-4 py-4">
                 <div className="flex items-center gap-3">
-                  <span className="text-sm font-semibold text-zinc-700">#{job.queuePosition}</span>
+                  <span className="text-sm font-semibold text-white/80">#{job.queuePosition}</span>
                   <JobQueueControls
                     paymentIntentId={job.paymentIntentId}
                     disableUp={index === 0}
@@ -46,28 +46,28 @@ export function JobTable({ jobs }: Props) {
                   />
                 </div>
               </td>
-              <td className="px-4 py-3 text-zinc-900">{job.id}</td>
-              <td className="px-4 py-3 font-mono text-xs text-zinc-700">
+              <td className="px-4 py-4 text-white">{job.id}</td>
+              <td className="px-4 py-4 font-mono text-xs text-zinc-400">
                 {job.paymentIntentId}
               </td>
-              <td className="px-4 py-3">
-                <span className="inline-flex items-center rounded-full bg-zinc-100 px-3 py-1 text-xs font-medium text-zinc-700">
+              <td className="px-4 py-4">
+                <span className="inline-flex items-center rounded-full border border-white/15 bg-white/5 px-3 py-1 text-xs font-semibold text-zinc-200">
                   {STATUS_LABELS[job.status]}
                 </span>
               </td>
-              <td className="px-4 py-3 text-zinc-900">
+              <td className="px-4 py-4 text-white">
                 {formatCurrency(job.totalCents, job.currency)}
               </td>
-              <td className="px-4 py-3 text-zinc-700">
+              <td className="px-4 py-4 text-zinc-400">
                 {formatDate(job.makerworksCreatedAt)}
               </td>
-              <td className="px-4 py-3 text-right">
+              <td className="px-4 py-4 text-right">
                 <div className="flex flex-col items-end gap-2">
                   {job.id === SAMPLE_JOB_ID && job.customerEmail ? (
                     <SampleJobTestEmailButton recipient={job.customerEmail} />
                   ) : null}
                   <Link
-                    className="text-sm font-medium text-blue-600 hover:text-blue-700"
+                    className="text-sm font-medium text-zinc-300 transition hover:text-white"
                     href={`/jobs/${encodeURIComponent(job.paymentIntentId)}`}
                   >
                     View

@@ -46,11 +46,14 @@ export function TestEmailForm({ defaultRecipient }: Props) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-2 rounded-md border border-dashed border-zinc-300 p-4">
-      <label className="text-sm font-medium text-zinc-800" htmlFor="test-email">
+    <form
+      onSubmit={handleSubmit}
+      className="space-y-2 rounded-xl border border-dashed border-white/20 bg-black/30 p-4 text-zinc-200"
+    >
+      <label className="text-sm font-medium text-zinc-200" htmlFor="test-email">
         Send a test receipt email
       </label>
-      <p className="text-xs text-zinc-500">
+      <p className="text-xs text-zinc-400">
         Use this to verify SMTP or Resend settings. The message is sent immediately and uses the configured
         `RECEIPT_FROM_EMAIL` as the sender.
       </p>
@@ -62,18 +65,18 @@ export function TestEmailForm({ defaultRecipient }: Props) {
           value={recipient}
           onChange={(event) => setRecipient(event.target.value)}
           placeholder="you@example.com"
-          className="flex-1 rounded-md border border-zinc-300 px-3 py-2 text-sm"
+          className="flex-1 rounded-md border border-white/10 bg-[#050505] px-3 py-2 text-sm text-zinc-100 outline-none transition focus:border-white/40"
           disabled={isSending}
         />
         <button
           type="submit"
-          className="rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-70"
+          className="rounded-md bg-gradient-to-b from-[#f6f6f6] to-[#d0d0d0] px-4 py-2 text-sm font-semibold text-[#111] shadow-[0_15px_40px_rgba(0,0,0,0.65)] transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-70"
           disabled={isSending}
         >
           {isSending ? "Sending..." : "Send test email"}
         </button>
       </div>
-      {error ? <p className="text-xs text-red-600">{error}</p> : null}
+      {error ? <p className="text-xs text-red-300">{error}</p> : null}
     </form>
   );
 }

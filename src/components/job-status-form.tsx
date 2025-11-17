@@ -99,7 +99,7 @@ export function JobStatusForm({
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
-        <label className="mb-1 block text-sm font-medium text-zinc-700" htmlFor="job-status">
+        <label className="mb-1 block text-sm font-medium text-zinc-200" htmlFor="job-status">
           Status
         </label>
         <select
@@ -107,7 +107,7 @@ export function JobStatusForm({
           name="status"
           value={status}
           onChange={(event) => setStatus(event.target.value as StatusQueryValue)}
-          className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm"
+          className="w-full rounded-md border border-white/10 bg-[#050505] px-3 py-2 text-sm text-zinc-100 outline-none transition focus:border-white/40"
           disabled={isSubmitting}
         >
           {STATUS_SELECT_OPTIONS.map((option) => (
@@ -118,7 +118,7 @@ export function JobStatusForm({
         </select>
       </div>
       <div>
-        <label className="mb-1 block text-sm font-medium text-zinc-700" htmlFor="invoiceUrl">
+        <label className="mb-1 block text-sm font-medium text-zinc-200" htmlFor="invoiceUrl">
           Invoice URL
         </label>
         <input
@@ -128,12 +128,12 @@ export function JobStatusForm({
           value={invoiceUrl}
           onChange={(event) => setInvoiceUrl(event.target.value)}
           placeholder="https://"
-          className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm"
+          className="w-full rounded-md border border-white/10 bg-[#050505] px-3 py-2 text-sm text-zinc-100 outline-none transition focus:border-white/40"
           disabled={isSubmitting}
         />
       </div>
       <div>
-        <label className="mb-1 block text-sm font-medium text-zinc-700" htmlFor="notes">
+        <label className="mb-1 block text-sm font-medium text-zinc-200" htmlFor="notes">
           Notes
         </label>
         <textarea
@@ -142,16 +142,16 @@ export function JobStatusForm({
           value={notes}
           onChange={(event) => setNotes(event.target.value)}
           rows={4}
-          className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm"
+          className="w-full rounded-md border border-white/10 bg-[#050505] px-3 py-2 text-sm text-zinc-100 outline-none transition focus:border-white/40"
           disabled={isSubmitting}
         />
       </div>
-      {completionHint ? <p className="text-sm text-zinc-600">{completionHint}</p> : null}
-      {error ? <p className="text-sm text-red-600">{error}</p> : null}
+      {completionHint ? <p className="text-sm text-zinc-300">{completionHint}</p> : null}
+      {error ? <p className="text-sm text-red-300">{error}</p> : null}
       <button
         type="submit"
         disabled={isSubmitting || (requiresReceipt && !hasCustomerEmail)}
-        className="rounded-md bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-70"
+        className="rounded-md bg-gradient-to-r from-[#f6f6f6] to-[#cfcfcf] px-4 py-2 text-sm font-semibold text-[#111] shadow-[0_15px_40px_rgba(0,0,0,0.65)] transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
       >
         {isSubmitting ? "Saving..." : submitLabel}
       </button>

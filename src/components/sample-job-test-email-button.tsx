@@ -40,7 +40,7 @@ export function SampleJobTestEmailButton({ recipient }: Props) {
       type="button"
       onClick={handleClick}
       disabled={isSending}
-      className="rounded-md border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700 transition hover:border-blue-300 hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-60"
+      className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-semibold text-zinc-200 transition hover:border-white/40 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60"
     >
       {isSending ? "Sending..." : "Send test email"}
     </button>

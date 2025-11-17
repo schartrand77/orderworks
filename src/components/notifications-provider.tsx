@@ -61,14 +61,14 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
             role="alert"
           >
             <div className="flex items-start gap-3">
-              <span className="text-sm text-zinc-900">{notification.message}</span>
+              <span className="text-sm text-current">{notification.message}</span>
               <button
                 type="button"
-                className="text-zinc-500 transition hover:text-zinc-700"
+                className="text-current transition hover:opacity-80"
                 onClick={() => dismiss(notification.id)}
               >
                 <span className="sr-only">Dismiss</span>
-                ×
+                X
               </button>
             </div>
           </div>
@@ -79,14 +79,15 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
 }
 
 function notificationClassName(type: NotificationType) {
-  const base = "pointer-events-auto rounded-md border px-4 py-3 shadow-lg";
+  const base =
+    "pointer-events-auto rounded-xl border px-4 py-3 text-sm shadow-[0_20px_60px_rgba(0,0,0,0.55)] backdrop-blur";
   switch (type) {
     case "success":
-      return `${base} border-emerald-200 bg-emerald-50`;
+      return `${base} border-emerald-400/40 bg-emerald-500/10 text-emerald-100`;
     case "error":
-      return `${base} border-red-200 bg-red-50`;
+      return `${base} border-red-400/40 bg-red-500/10 text-red-100`;
     default:
-      return `${base} border-zinc-200 bg-white`;
+      return `${base} border-white/10 bg-white/10 text-zinc-100`;
   }
 }
 

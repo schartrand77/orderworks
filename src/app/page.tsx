@@ -82,7 +82,7 @@ async function JobsSection({ searchParams }: { searchParams?: Promise<SearchPara
     <div className="space-y-6">
       <JobFilters status={statusValue} createdFrom={createdFromValue} createdTo={createdToValue} />
       {error ? (
-        <div className="rounded-md border border-red-200 bg-red-50 p-4 text-sm text-red-700">{error}</div>
+        <div className="rounded-md border border-red-400/50 bg-red-500/10 p-4 text-sm text-red-100">{error}</div>
       ) : null}
       <JobTable jobs={jobs} />
     </div>
@@ -91,14 +91,21 @@ async function JobsSection({ searchParams }: { searchParams?: Promise<SearchPara
 
 export default function Page({ searchParams }: { searchParams?: Promise<SearchParams> }) {
   return (
-    <main className="mx-auto flex w-full max-w-6xl flex-col gap-8 px-6 py-10">
-      <div className="space-y-1">
-        <h1 className="text-2xl font-semibold text-zinc-900">MakerWorks jobs</h1>
-        <p className="text-sm text-zinc-600">
+    <main className="mx-auto flex w-full max-w-6xl flex-col gap-9 px-6 py-10 text-zinc-50">
+      <div className="space-y-3">
+        <p className="text-xs font-semibold uppercase tracking-[0.45em] text-zinc-500">MakerWorks queue</p>
+        <h1 className="text-4xl font-semibold text-white">Fabrication jobs</h1>
+        <p className="text-sm text-zinc-400">
           Review incoming MakerWorks fabrication requests, track their status, and complete jobs once invoices are ready.
         </p>
       </div>
-      <Suspense fallback={<div className="text-sm text-zinc-600">Loading jobs…</div>}>
+      <Suspense
+        fallback={
+          <div className="rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-sm text-zinc-200">
+            Loading jobs...
+          </div>
+        }
+      >
         <JobsSection searchParams={searchParams} />
       </Suspense>
     </main>

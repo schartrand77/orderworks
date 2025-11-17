@@ -12,8 +12,8 @@ export function JobDetail({ job }: Props) {
   const metadata = job.metadata as unknown;
 
   return (
-    <section className="space-y-6 rounded-lg border border-zinc-200 bg-white p-6">
-      <div className="overflow-hidden rounded-md border border-zinc-100">
+    <section className="space-y-6 rounded-2xl border border-white/10 bg-[#070707]/90 p-6 shadow-[0_30px_80px_rgba(0,0,0,0.65)]">
+      <div className="overflow-hidden rounded-xl border border-white/10">
         <Image
           src="/makerworks-letterhead.svg"
           alt="MakerWorks letterhead"
@@ -25,44 +25,44 @@ export function JobDetail({ job }: Props) {
       </div>
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-lg font-semibold text-zinc-900">Job summary</h2>
-          <p className="text-sm text-zinc-600">{job.id}</p>
+          <h2 className="text-lg font-semibold text-white">Job summary</h2>
+          <p className="text-sm text-zinc-400">{job.id}</p>
         </div>
-        <span className="inline-flex items-center rounded-full bg-zinc-100 px-3 py-1 text-xs font-medium text-zinc-700">
+        <span className="inline-flex items-center rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-semibold text-zinc-100">
           {STATUS_LABELS[job.status]}
         </span>
       </header>
-      <dl className="grid gap-4 text-sm sm:grid-cols-2">
+      <dl className="grid gap-4 text-sm text-zinc-200 sm:grid-cols-2">
         <div>
-          <dt className="font-medium text-zinc-700">Queue position</dt>
-          <dd className="text-zinc-700">#{job.queuePosition}</dd>
+          <dt className="font-medium text-zinc-400">Queue position</dt>
+          <dd className="text-white">#{job.queuePosition}</dd>
         </div>
         <div>
-          <dt className="font-medium text-zinc-700">Payment intent</dt>
-          <dd className="font-mono text-xs text-zinc-700">{job.paymentIntentId}</dd>
+          <dt className="font-medium text-zinc-400">Payment intent</dt>
+          <dd className="font-mono text-xs text-zinc-300">{job.paymentIntentId}</dd>
         </div>
         <div>
-          <dt className="font-medium text-zinc-700">Customer email</dt>
-          <dd className="text-zinc-700">{job.customerEmail ?? "—"}</dd>
+          <dt className="font-medium text-zinc-400">Customer email</dt>
+          <dd className="text-white">{job.customerEmail ?? "Not provided"}</dd>
         </div>
         <div>
-          <dt className="font-medium text-zinc-700">User ID</dt>
-          <dd className="text-zinc-700">{job.userId ?? "—"}</dd>
+          <dt className="font-medium text-zinc-400">User ID</dt>
+          <dd className="text-white">{job.userId ?? "Not provided"}</dd>
         </div>
         <div>
-          <dt className="font-medium text-zinc-700">Total</dt>
-          <dd className="text-zinc-900">{formatCurrency(job.totalCents, job.currency)}</dd>
+          <dt className="font-medium text-zinc-400">Total</dt>
+          <dd className="text-white">{formatCurrency(job.totalCents, job.currency)}</dd>
         </div>
         <div>
-          <dt className="font-medium text-zinc-700">MakerWorks created</dt>
-          <dd className="text-zinc-700">{formatDate(job.makerworksCreatedAt)}</dd>
+          <dt className="font-medium text-zinc-400">MakerWorks created</dt>
+          <dd className="text-white">{formatDate(job.makerworksCreatedAt)}</dd>
         </div>
         <div>
-          <dt className="font-medium text-zinc-700">Invoice URL</dt>
-          <dd className="text-zinc-700">
+          <dt className="font-medium text-zinc-400">Invoice URL</dt>
+          <dd className="text-white">
             {job.invoiceUrl ? (
               <a
-                className="text-blue-600 hover:text-blue-700"
+                className="text-zinc-200 underline decoration-white/30 underline-offset-4 transition hover:text-white hover:decoration-white/60"
                 href={job.invoiceUrl}
                 target="_blank"
                 rel="noopener noreferrer"
@@ -70,43 +70,43 @@ export function JobDetail({ job }: Props) {
                 View invoice
               </a>
             ) : (
-              "—"
+              "Not provided"
             )}
           </dd>
         </div>
         <div className="sm:col-span-2">
-          <dt className="font-medium text-zinc-700">Notes</dt>
-          <dd className="whitespace-pre-wrap text-zinc-700">{job.notes ?? "—"}</dd>
+          <dt className="font-medium text-zinc-400">Notes</dt>
+          <dd className="whitespace-pre-wrap text-white">{job.notes ?? "No additional notes"}</dd>
         </div>
       </dl>
       <div>
-        <h3 className="mb-2 text-sm font-semibold text-zinc-800">Line items</h3>
+        <h3 className="mb-2 text-sm font-semibold text-zinc-300">Line items</h3>
         <div className="space-y-3">
           {Array.isArray(lineItems) ? (
             lineItems.map((item, index) => (
               <pre
                 key={index}
-                className="overflow-x-auto rounded-md bg-zinc-900/5 p-3 text-xs text-zinc-800"
+                className="overflow-x-auto rounded-lg border border-white/10 bg-black/40 p-3 text-xs text-zinc-200"
               >
                 {JSON.stringify(item, null, 2)}
               </pre>
             ))
           ) : (
-            <pre className="overflow-x-auto rounded-md bg-zinc-900/5 p-3 text-xs text-zinc-800">
+            <pre className="overflow-x-auto rounded-lg border border-white/10 bg-black/40 p-3 text-xs text-zinc-200">
               {JSON.stringify(lineItems, null, 2)}
             </pre>
           )}
         </div>
       </div>
       <div>
-        <h3 className="mb-2 text-sm font-semibold text-zinc-800">Shipping</h3>
-        <pre className="overflow-x-auto rounded-md bg-zinc-900/5 p-3 text-xs text-zinc-800">
+        <h3 className="mb-2 text-sm font-semibold text-zinc-300">Shipping</h3>
+        <pre className="overflow-x-auto rounded-lg border border-white/10 bg-black/40 p-3 text-xs text-zinc-200">
           {shipping ? JSON.stringify(shipping, null, 2) : "null"}
         </pre>
       </div>
       <div>
-        <h3 className="mb-2 text-sm font-semibold text-zinc-800">Metadata</h3>
-        <pre className="overflow-x-auto rounded-md bg-zinc-900/5 p-3 text-xs text-zinc-800">
+        <h3 className="mb-2 text-sm font-semibold text-zinc-300">Metadata</h3>
+        <pre className="overflow-x-auto rounded-lg border border-white/10 bg-black/40 p-3 text-xs text-zinc-200">
           {metadata ? JSON.stringify(metadata, null, 2) : "null"}
         </pre>
       </div>

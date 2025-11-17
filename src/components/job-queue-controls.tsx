@@ -51,18 +51,18 @@ export function JobQueueControls({ paymentIntentId, disableUp, disableDown }: Pr
         aria-label="Move job up"
         onClick={() => handleClick("up")}
         disabled={isDisabled("up")}
-        className="rounded border border-zinc-300 px-2 py-1 text-xs text-zinc-700 transition hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-40"
+        className="rounded-md border border-white/10 bg-white/5 px-2 py-1 text-xs font-semibold text-zinc-200 transition hover:border-white/40 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40"
       >
-        ↑
+        Up
       </button>
       <button
         type="button"
         aria-label="Move job down"
         onClick={() => handleClick("down")}
         disabled={isDisabled("down")}
-        className="rounded border border-zinc-300 px-2 py-1 text-xs text-zinc-700 transition hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-40"
+        className="rounded-md border border-white/10 bg-white/5 px-2 py-1 text-xs font-semibold text-zinc-200 transition hover:border-white/40 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40"
       >
-        ↓
+        Down
       </button>
     </div>
   );
