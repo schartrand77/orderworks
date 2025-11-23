@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { parseJobFilters } from "@/lib/job-query";
 import { JobFilters } from "@/components/job-filters";
 import { JobTable } from "@/components/job-table";
+import { MakerWorksConnectionIndicator } from "@/components/makerworks-connection-indicator";
 
 export const dynamic = "force-dynamic";
 
@@ -92,12 +93,17 @@ async function JobsSection({ searchParams }: { searchParams?: Promise<SearchPara
 export default function Page({ searchParams }: { searchParams?: Promise<SearchParams> }) {
   return (
     <main className="mx-auto flex w-full max-w-6xl flex-col gap-9 px-6 py-10 text-zinc-50">
-      <div className="space-y-3">
-        <p className="text-xs font-semibold uppercase tracking-[0.45em] text-zinc-500">MakerWorks queue</p>
-        <h1 className="text-4xl font-semibold text-white">Fabrication jobs</h1>
-        <p className="text-sm text-zinc-400">
-          Review incoming MakerWorks fabrication requests, track their status, and complete jobs once invoices are ready.
-        </p>
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+        <div className="space-y-3">
+          <p className="text-xs font-semibold uppercase tracking-[0.45em] text-zinc-500">MakerWorks queue</p>
+          <h1 className="text-4xl font-semibold text-white">Fabrication jobs</h1>
+          <p className="text-sm text-zinc-400">
+            Review incoming MakerWorks fabrication requests, track their status, and complete jobs once invoices are ready.
+          </p>
+        </div>
+        <div className="lg:max-w-xs">
+          <MakerWorksConnectionIndicator />
+        </div>
       </div>
       <Suspense
         fallback={
