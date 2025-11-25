@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { JobDeleteButton } from "@/components/job-delete-button";
 import { JobDetail } from "@/components/job-detail";
 import { JobStatusForm } from "@/components/job-status-form";
 import { TestEmailForm } from "@/components/test-email-form";
@@ -40,6 +41,15 @@ export default async function JobDetailPage({ params }: PageProps) {
           customerEmail={job.customerEmail}
         />
         <TestEmailForm defaultRecipient={job.customerEmail} />
+      </section>
+      <section className="space-y-3 rounded-2xl border border-red-500/30 bg-red-500/5 p-6 shadow-[0_20px_60px_rgba(0,0,0,0.35)]">
+        <div className="space-y-1">
+          <h2 className="text-lg font-semibold text-white">Delete job</h2>
+          <p className="text-sm text-red-100/80">
+            Permanently remove this job from the queue and database. This action cannot be undone.
+          </p>
+        </div>
+        <JobDeleteButton paymentIntentId={job.paymentIntentId} jobId={job.id} />
       </section>
     </main>
   );

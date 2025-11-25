@@ -1,0 +1,39 @@
+{
+  "id": "makerworks-sample-job",
+  "paymentIntentId": "pi_sample_123456",
+  "totalCents": 18500,
+  "currency": "usd",
+  "lineItems": [
+    {
+      "description": "3D printed enclosure",
+      "quantity": 1,
+      "unitPriceCents": 12500,
+      "material": "PLA"
+    },
+    {
+      "description": "Laser cut acrylic panels",
+      "quantity": 2,
+      "unitPriceCents": 3000,
+      "color": "smoke gray"
+    }
+  ],
+  "shipping": {
+    "service": "UPS Ground",
+    "tracking": null,
+    "address": {
+      "name": "Ada Lovelace",
+      "street": "123 Maker Lane",
+      "city": "Ann Arbor",
+      "state": "MI",
+      "postalCode": "48103",
+      "country": "US"
+    }
+  },
+  "metadata": {
+    "project": "Sample MakerWorks Job",
+    "priority": "rush"
+  },
+  "userId": "user_sample_001",
+  "customerEmail": "info@makerworks.app",
+  "createdAt": "2025-01-01T12:00:00Z"
+}

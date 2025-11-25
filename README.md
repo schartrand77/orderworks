@@ -175,6 +175,10 @@ Updates a job's status (pending, printing, or completed) plus optional `invoiceU
 
 Omit `invoiceUrl` or send an empty string to leave it unchanged/clear it. Requests missing a customer email or the required email environment variables will fail when attempting to complete a job.
 
+### DELETE `/api/jobs/:paymentIntentId`
+
+Permanently deletes the specified job and compacts the remaining queue positions. Use this to remove test data or duplicate MakerWorks submissions. Returns HTTP 200 with `{ "deleted": true }` when successful.
+
 All API responses are JSON. Validation errors return HTTP 422 with details.
 
 ## Admin UI
@@ -185,6 +189,7 @@ Navigate to the root path `/` to view the OrderWorks admin dashboard:
 - Inspect line items, shipping details, and metadata on each job.
 - Reorder the live job queue by using the ↑ / ↓ buttons in the table; queue position is shown for every job and can be adjusted to prioritize work.
 - Open a job detail view (`/jobs/:paymentIntentId`) to review all data and mark the job complete.
+- Delete a job entirely from the detail view if it was created in error or is no longer needed.
 
 ## MakerWorks configuration
 

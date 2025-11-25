@@ -88,3 +88,27 @@ export async function PATCH(request: NextRequest, context: { params: Promise<Par
 
   return NextResponse.json({ job: updated });
 }
+
+export async function DELETE(_request: NextRequest, context: { params: Promise<Params> }) {
+  const { paymentIntentId } = await context.params;
+
+  const existing = await prisma.job.findUnique({
+    where: { paymentIntentId },
+  });
+
+  if (!existing) {
+    return NextResponse.json({ error: "Job not found" }, { status: 404 });
+  }
+
+  await prisma.$transaction(async (tx) => {
+    await tx.job.delete({ where: { id: existing.id } });
+    if (typeof existing.queuePosition === "number") {
+      await tx.job.updateMany({
+        where: { queuePosition: { gt: existing.queuePosition } },
+        data: { queuePosition: { decrement: 1 } },
+      });
+    }
+  });
+
+  return NextResponse.json({ deleted: true });
+}
