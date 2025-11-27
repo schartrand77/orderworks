@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import type { MakerWorksStatusPayload, MakerWorksStatus } from "@/types/makerworks-status";
+import { handleUnauthorizedResponse } from "@/lib/client-auth";
 
 const POLL_INTERVAL_MS = 30_000;
 
@@ -51,6 +52,9 @@ export function MakerWorksConnectionIndicator() {
     async function fetchStatus() {
       try {
         const response = await fetch("/api/makerworks/status", { cache: "no-store" });
+        if (handleUnauthorizedResponse(response.status)) {
+          return;
+        }
         const json = (await response.json()) as MakerWorksStatusPayload;
 
         if (!response.ok || json.status === "error") {

@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { handleUnauthorizedResponse } from "@/lib/client-auth";
 
 interface Props {
   paymentIntentId: string;
@@ -15,6 +16,10 @@ async function moveJob(paymentIntentId: string, direction: "up" | "down") {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ direction }),
   });
+
+  if (handleUnauthorizedResponse(response.status)) {
+    return;
+  }
 
   if (!response.ok) {
     const body = await response.json().catch(() => ({}));

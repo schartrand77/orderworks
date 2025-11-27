@@ -1,8 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
+import { ensureAdminApiAuth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { parseJobFilters } from "@/lib/job-query";
 
 export async function GET(request: NextRequest) {
+  const unauthorized = ensureAdminApiAuth(request);
+  if (unauthorized) {
+    return unauthorized;
+  }
   try {
     const filters = parseJobFilters(request.nextUrl.searchParams);
 

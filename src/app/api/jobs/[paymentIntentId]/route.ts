@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import type { Job } from "@/generated/prisma/client";
 import { JobStatus as JobStatusEnum } from "@/generated/prisma/enums";
+import { ensureAdminApiAuth } from "@/lib/auth";
 import { sendReceiptEmail } from "@/lib/email";
 import { prisma } from "@/lib/prisma";
 import { jobStatusUpdateSchema, normalizeJobStatusUpdatePayload } from "@/lib/validation";
@@ -10,6 +11,10 @@ interface Params {
 }
 
 export async function GET(_request: NextRequest, context: { params: Promise<Params> }) {
+  const unauthorized = ensureAdminApiAuth(_request);
+  if (unauthorized) {
+    return unauthorized;
+  }
   const { paymentIntentId } = await context.params;
 
   const job = await prisma.job.findUnique({
@@ -24,6 +29,10 @@ export async function GET(_request: NextRequest, context: { params: Promise<Para
 }
 
 export async function PATCH(request: NextRequest, context: { params: Promise<Params> }) {
+  const unauthorized = ensureAdminApiAuth(request);
+  if (unauthorized) {
+    return unauthorized;
+  }
   const { paymentIntentId } = await context.params;
 
   const existing = await prisma.job.findUnique({
@@ -90,6 +99,10 @@ export async function PATCH(request: NextRequest, context: { params: Promise<Par
 }
 
 export async function DELETE(_request: NextRequest, context: { params: Promise<Params> }) {
+  const unauthorized = ensureAdminApiAuth(_request);
+  if (unauthorized) {
+    return unauthorized;
+  }
   const { paymentIntentId } = await context.params;
 
   const existing = await prisma.job.findUnique({

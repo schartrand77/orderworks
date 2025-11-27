@@ -27,7 +27,10 @@ services:
     working_dir: /app
     environment:
       DATABASE_URL: postgresql://orderworks:orderworks@db:5432/orderworks?schema=public
-      MAKERWORKS_WEBHOOK_SECRET: dev-secret
+      MAKERWORKS_WEBHOOK_SECRET: ${MAKERWORKS_WEBHOOK_SECRET:-dev-secret}
+      ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-dev-password}
+      ADMIN_SESSION_SECRET: ${ADMIN_SESSION_SECRET:-dev-session-secret}
       NEXT_TELEMETRY_DISABLED: "1"
       NODE_ENV: development
       PORT: "3000"

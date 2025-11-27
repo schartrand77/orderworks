@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 import type { JobStatus } from "@/generated/prisma/enums";
 import { STATUS_LABELS, type StatusQueryValue } from "@/lib/format";
 import { useNotifications } from "@/components/notifications-provider";
+import { handleUnauthorizedResponse } from "@/lib/client-auth";
 
 interface Props {
   paymentIntentId: string;
@@ -62,6 +63,10 @@ export function JobStatusForm({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status, invoiceUrl, notes }),
       });
+
+      if (handleUnauthorizedResponse(response.status)) {
+        return;
+      }
 
       const body = await response.json().catch(() => ({}));
 

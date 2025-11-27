@@ -15,6 +15,9 @@ Create a `.env` file (or set environment variables in your deployment platform) 
 ```env
 DATABASE_URL="postgresql://USER:PASSWORD@HOST:PORT/orderworks?schema=public"
 MAKERWORKS_WEBHOOK_SECRET="super-secret-token"
+ADMIN_USERNAME="admin@example.com"
+ADMIN_PASSWORD="change-me"
+ADMIN_SESSION_SECRET="long-random-secret"
 RECEIPT_FROM_EMAIL="MakerWorks Receipts <no-reply@makerworks.app>"
 RECEIPT_REPLY_TO_EMAIL="MakerWorks <info@makerworks.app>"
 # Resend transport (optional)
@@ -27,7 +30,9 @@ SMTP_PASSWORD="smtp-password"
 SMTP_SECURE="false"
 ```
 
-The same `MAKERWORKS_WEBHOOK_SECRET` must be configured in MakerWorks when registering the webhook. Provide `RECEIPT_FROM_EMAIL` plus either `RESEND_API_KEY` or the SMTP variables to enable receipt emails whenever a job is marked as completed. Leave `RESEND_API_KEY` blank if you plan to send mail only via SMTP. Set `RECEIPT_REPLY_TO_EMAIL` if replies should route to a different mailbox (e.g., `info@makerworks.app`).
+The same `MAKERWORKS_WEBHOOK_SECRET` must be configured in MakerWorks when registering the webhook. Provide `RECEIPT_FROM_EMAIL` plus either `RESEND_API_KEY` or the SMTP variables to enable receipt emails whenever a job is marked as completed. Leave `RESEND_API_KEY` blank if you plan to send mail only via SMTP. Set `RECEIPT_REPLY_TO_EMAIL` if replies should route to a different mailbox (e.g., `info@makerworks.app`). 
+
+`ADMIN_USERNAME` and `ADMIN_PASSWORD` gate access to the dashboard and admin-only API routes. `ADMIN_SESSION_SECRET` signs the session cookie; change it any time you need to invalidate existing logins.
 
 ## Install dependencies
 
@@ -202,6 +207,8 @@ Navigate to the root path `/` to view the OrderWorks admin dashboard:
 - Reorder the live job queue by using the ↑ / ↓ buttons in the table; queue position is shown for every job and can be adjusted to prioritize work.
 - Open a job detail view (`/jobs/:paymentIntentId`) to review all data and mark the job complete.
 - Delete a job entirely from the detail view if it was created in error or is no longer needed.
+
+Visit `/login` to authenticate with the configured admin credentials. Sessions last 12 hours by default; logging out or rotating `ADMIN_SESSION_SECRET` immediately revokes access.
 
 ## MakerWorks configuration
 

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useNotifications } from "@/components/notifications-provider";
+import { handleUnauthorizedResponse } from "@/lib/client-auth";
 
 interface Props {
   recipient: string;
@@ -20,6 +21,10 @@ export function SampleJobTestEmailButton({ recipient }: Props) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ to: recipient }),
       });
+
+      if (handleUnauthorizedResponse(response.status)) {
+        return;
+      }
 
       const body = await response.json().catch(() => ({}));
       if (!response.ok) {

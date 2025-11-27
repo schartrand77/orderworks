@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useNotifications } from "@/components/notifications-provider";
+import { handleUnauthorizedResponse } from "@/lib/client-auth";
 
 interface Props {
   paymentIntentId: string;
@@ -31,6 +32,9 @@ export function JobDeleteButton({ paymentIntentId, jobId }: Props) {
       const response = await fetch(`/api/jobs/${encodeURIComponent(paymentIntentId)}`, {
         method: "DELETE",
       });
+      if (handleUnauthorizedResponse(response.status)) {
+        return;
+      }
       const body = await response.json().catch(() => ({}));
       if (!response.ok) {
         throw new Error(body.error ?? "Unable to delete job");

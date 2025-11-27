@@ -29,6 +29,7 @@ When adding the container, fill in the template inputs:
 
 - **Database URL** - PostgreSQL connection string from inside the container. If you deploy the official Postgres template and name it `orderworks-db`, a typical string is `postgresql://orderworks:orderworks@orderworks-db:5432/orderworks?schema=public`.
 - **MakerWorks Webhook Secret** - Must match the secret you configure in MakerWorks and is used for both the Bearer token and the `X-MakerWorks-Signature` HMAC header.
+- **Admin login** - Set `ADMIN_USERNAME`, `ADMIN_PASSWORD`, and `ADMIN_SESSION_SECRET` to secure the dashboard. Rotating the secret immediately revokes existing sessions.
 - **Web UI Port** - Defaults to `3000`. Map it to any host port you prefer.
 - **Email settings** - (optional) Provide either a Resend API key or the SMTP host/port/credentials to enable completion receipts. Leave blank to disable emailing.
 - **Skip DB Migrate** - Leave at `0` to let the container apply Prisma migrations on start. Set to `1` once you manage migrations elsewhere.

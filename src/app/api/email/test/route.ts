@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
+import { ensureAdminApiAuth } from "@/lib/auth";
 import { sendTestEmail } from "@/lib/email";
 
 const payloadSchema = z.object({
@@ -7,6 +8,10 @@ const payloadSchema = z.object({
 });
 
 export async function POST(request: NextRequest) {
+  const unauthorized = ensureAdminApiAuth(request);
+  if (unauthorized) {
+    return unauthorized;
+  }
   let parsedBody: z.infer<typeof payloadSchema>;
 
   try {

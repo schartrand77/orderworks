@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useNotifications } from "@/components/notifications-provider";
+import { handleUnauthorizedResponse } from "@/lib/client-auth";
 
 interface Props {
   defaultRecipient?: string | null;
@@ -29,6 +30,10 @@ export function TestEmailForm({ defaultRecipient }: Props) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ to: trimmedRecipient }),
       });
+
+      if (handleUnauthorizedResponse(response.status)) {
+        return;
+      }
 
       const body = await response.json().catch(() => ({}));
       if (!response.ok) {

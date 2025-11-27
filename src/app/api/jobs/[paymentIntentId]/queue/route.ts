@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { ensureAdminApiAuth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
 interface Params {
@@ -12,6 +13,10 @@ function isDirection(value: unknown): value is Direction {
 }
 
 export async function POST(request: NextRequest, context: { params: Promise<Params> }) {
+  const unauthorized = ensureAdminApiAuth(request);
+  if (unauthorized) {
+    return unauthorized;
+  }
   const { paymentIntentId } = await context.params;
 
   const job = await prisma.job.findUnique({
