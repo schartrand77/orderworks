@@ -39,6 +39,7 @@ const sampleJob = {
     metadata: {
       project: "Sample MakerWorks Job",
       priority: "rush",
+      approximate_print_time_hours: 6.5,
     },
     userId: "user_sample_001",
     customerEmail: "info@makerworks.app",

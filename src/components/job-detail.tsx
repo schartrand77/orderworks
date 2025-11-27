@@ -1,6 +1,7 @@
 import Image from "next/image";
 import type { Job } from "@/generated/prisma/client";
 import { formatCurrency, formatDate, STATUS_LABELS } from "@/lib/format";
+import { deriveApproximatePrintTime } from "@/lib/print-time";
 
 interface Props {
   job: Job;
@@ -10,6 +11,7 @@ export function JobDetail({ job }: Props) {
   const lineItems = job.lineItems as unknown;
   const shipping = job.shipping as unknown;
   const metadata = job.metadata as unknown;
+  const printTime = deriveApproximatePrintTime(job.metadata);
 
   return (
     <section className="space-y-6 rounded-2xl border border-white/10 bg-[#070707]/90 p-6 shadow-[0_30px_80px_rgba(0,0,0,0.65)]">
@@ -37,6 +39,12 @@ export function JobDetail({ job }: Props) {
           <dt className="font-medium text-zinc-400">Queue position</dt>
           <dd className="text-white">#{job.queuePosition}</dd>
         </div>
+        {printTime ? (
+          <div>
+            <dt className="font-medium text-zinc-400">Approximate print time</dt>
+            <dd className="text-white">~{printTime.formatted}</dd>
+          </div>
+        ) : null}
         <div>
           <dt className="font-medium text-zinc-400">Payment intent</dt>
           <dd className="font-mono text-xs text-zinc-300">{job.paymentIntentId}</dd>

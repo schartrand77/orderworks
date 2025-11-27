@@ -16,6 +16,13 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "OrderWorks Admin",
   description: "Administer MakerWorks fabrication jobs, webhook ingestion, and fulfillment.",
+  themeColor: "#0f172a",
+  manifest: "/manifest.webmanifest",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "OrderWorks",
+  },
 };
 
 export default function RootLayout({

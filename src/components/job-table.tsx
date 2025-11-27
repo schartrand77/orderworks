@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { Job } from "@/generated/prisma/client";
 import { formatCurrency, formatDate, STATUS_LABELS } from "@/lib/format";
+import { deriveApproximatePrintTime } from "@/lib/print-time";
 import { JobQueueControls } from "@/components/job-queue-controls";
 import { SampleJobTestEmailButton } from "@/components/sample-job-test-email-button";
 
@@ -34,9 +35,11 @@ export function JobTable({ jobs }: Props) {
           </tr>
         </thead>
         <tbody className="divide-y divide-white/5">
-          {jobs.map((job, index) => (
-            <tr key={job.id} className="transition hover:bg-white/5">
-              <td className="px-4 py-4">
+          {jobs.map((job, index) => {
+            const printTime = deriveApproximatePrintTime(job.metadata);
+            return (
+              <tr key={job.id} className="transition hover:bg-white/5">
+                <td className="px-4 py-4">
                 <div className="flex items-center gap-3">
                   <span className="text-sm font-semibold text-white/80">#{job.queuePosition}</span>
                   <JobQueueControls
@@ -46,7 +49,19 @@ export function JobTable({ jobs }: Props) {
                   />
                 </div>
               </td>
-              <td className="px-4 py-4 text-white">{job.id}</td>
+                <td className="px-4 py-4 text-white">
+                  <div className="flex flex-col gap-1">
+                    <span>{job.id}</span>
+                    {printTime ? (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2 py-0.5 text-[0.65rem] font-semibold uppercase tracking-[0.15em] text-amber-200/90">
+                        approx.
+                        <span className="text-sm font-semibold normal-case tracking-normal text-amber-100">
+                          ~{printTime.formatted}
+                        </span>
+                      </span>
+                    ) : null}
+                  </div>
+                </td>
               <td className="px-4 py-4 font-mono text-xs text-zinc-400">
                 {job.paymentIntentId}
               </td>
@@ -74,8 +89,9 @@ export function JobTable({ jobs }: Props) {
                   </Link>
                 </div>
               </td>
-            </tr>
-          ))}
+              </tr>
+            );
+          })}
         </tbody>
       </table>
     </div>
