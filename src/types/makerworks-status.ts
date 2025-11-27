@@ -7,3 +7,17 @@ export interface MakerWorksStatusPayload {
   thresholdMinutes: number;
   error?: string;
 }
+
+export interface MakerWorksHealthPayload extends MakerWorksStatusPayload {
+  events: {
+    total: number;
+    received: number;
+    processed: number;
+    failed: number;
+    lastEventAt: string | null;
+  };
+  jobs: {
+    total: number;
+  };
+  appUptimeSeconds: number;
+}

@@ -17,12 +17,26 @@ const dateLike = z
   .transform((value) => (value instanceof Date ? value : new Date(value)))
   .refine((value) => !Number.isNaN(value.getTime()), "Invalid date");
 
+const positiveInt = numeric.refine((value) => value > 0, "Value must be greater than zero");
+const moneyCents = numeric.refine((value) => value >= 0, "Value must be zero or greater");
+
+const lineItemSchema = z
+  .object({
+    description: z.string().min(1, "line item description is required"),
+    quantity: positiveInt,
+    unitPriceCents: moneyCents,
+    material: z.string().min(1).optional(),
+    color: z.string().min(1).optional(),
+    notes: z.string().optional(),
+  })
+  .passthrough();
+
 export const jobPayloadSchema = z.object({
   id: z.string().min(1, "id is required"),
   paymentIntentId: z.string().min(1, "paymentIntentId is required"),
   totalCents: numeric,
   currency: z.string().min(1, "currency is required"),
-  lineItems: z.array(z.unknown()),
+  lineItems: z.array(lineItemSchema).min(1, "lineItems must include at least one entry"),
   shipping: z.unknown().optional().nullable(),
   metadata: z.record(z.string(), z.unknown()).optional().nullable(),
   userId: z.string().min(1).optional().nullable(),

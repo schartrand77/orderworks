@@ -133,7 +133,7 @@ The template defaults to pulling `ghcr.io/schartrand77/orderworks:latest`; updat
 
 ### POST `/api/makerworks/jobs`
 
-Ingests MakerWorks job payloads. Requests must include `Authorization: Bearer <MAKERWORKS_WEBHOOK_SECRET>`.
+Ingests MakerWorks job payloads. Requests must include both `Authorization: Bearer <MAKERWORKS_WEBHOOK_SECRET>` and `X-MakerWorks-Signature: sha256=<HMAC>` where the HMAC value is the SHA-256 digest of the exact JSON body using the shared secret as the key.
 
 Payload fields accepted:
 
@@ -141,7 +141,7 @@ Payload fields accepted:
 - `paymentIntentId` (string)
 - `totalCents` (number or numeric string)
 - `currency` (string ISO currency code)
-- `lineItems` (array)
+- `lineItems` (array of objects: `{ description, quantity, unitPriceCents, ... }`)
 - `shipping` (object, optional)
 - `metadata` (object, optional)
 - `userId` (string, optional)
@@ -179,6 +179,18 @@ Omit `invoiceUrl` or send an empty string to leave it unchanged/clear it. Reques
 
 Permanently deletes the specified job and compacts the remaining queue positions. Use this to remove test data or duplicate MakerWorks submissions. Returns HTTP 200 with `{ "deleted": true }` when successful.
 
+### GET `/api/makerworks/status`
+
+Returns the most recent MakerWorks ingestion timestamp plus a `connected`/`waiting`/`stale` indicator. This powers the dashboard badge.
+
+### GET `/api/makerworks/health`
+
+Provides a superset of the status payload that also includes webhook event counters, last event time, and total jobs stored. Use this for external health checks or uptime monitors.
+
+### HEAD `/api/makerworks/health`
+
+Same as the GET endpoint but without a response body, suitable for lightweight probes.
+
 All API responses are JSON. Validation errors return HTTP 422 with details.
 
 ## Admin UI
@@ -195,10 +207,15 @@ Navigate to the root path `/` to view the OrderWorks admin dashboard:
 
 Configure the MakerWorks webhook to point at your deployment:
 
-- `ORDERWORKS_WEBHOOK_URL` â†’ `https://orderworks.example.com/api/makerworks/jobs`
-- `ORDERWORKS_WEBHOOK_SECRET` â†’ value matching `MAKERWORKS_WEBHOOK_SECRET`
+- `ORDERWORKS_WEBHOOK_URL` - `https://orderworks.example.com/api/makerworks/jobs`
+- `ORDERWORKS_WEBHOOK_SECRET` - value matching `MAKERWORKS_WEBHOOK_SECRET`
 
-MakerWorks will send payloads to the webhook endpoint. OrderWorks validates the shared secret before storing or updating jobs.
+MakerWorks must send both the Bearer token and HMAC signature headers:
+
+1. `Authorization: Bearer <MAKERWORKS_WEBHOOK_SECRET>`
+2. `X-MakerWorks-Signature: sha256(HMAC(secret, raw_body))`
+
+OrderWorks validates both headers before storing or updating jobs.
 
 
 
