@@ -2,6 +2,7 @@ import Image from "next/image";
 import type { Job } from "@/generated/prisma/client";
 import { formatCurrency, formatDate, STATUS_LABELS } from "@/lib/format";
 import { deriveApproximatePrintTime } from "@/lib/print-time";
+import { buildBambuStudioLink, extractModelFiles } from "@/lib/model-files";
 
 interface Props {
   job: Job;
@@ -12,6 +13,7 @@ export function JobDetail({ job }: Props) {
   const shipping = job.shipping as unknown;
   const metadata = job.metadata as unknown;
   const printTime = deriveApproximatePrintTime(job.metadata);
+  const modelFiles = extractModelFiles(job);
 
   return (
     <section className="space-y-6 rounded-2xl border border-white/10 bg-[#070707]/90 p-6 shadow-[0_30px_80px_rgba(0,0,0,0.65)]">
@@ -87,6 +89,45 @@ export function JobDetail({ job }: Props) {
           <dd className="whitespace-pre-wrap text-white">{job.notes ?? "No additional notes"}</dd>
         </div>
       </dl>
+      {modelFiles.length > 0 ? (
+        <div>
+          <h3 className="mb-2 text-sm font-semibold text-zinc-300">Model files</h3>
+          <div className="space-y-3">
+            {modelFiles.map((file) => (
+              <div
+                key={file.url}
+                className="flex flex-col gap-3 rounded-lg border border-white/10 bg-black/40 p-3 sm:flex-row sm:items-center sm:justify-between"
+              >
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-white">{file.label}</p>
+                  <p className="truncate text-xs text-zinc-400" title={file.url}>
+                    {file.url}
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <a
+                    href={file.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="rounded-md border border-white/15 bg-white/5 px-3 py-1.5 text-xs font-semibold text-white transition hover:border-white/40 hover:bg-white/10"
+                  >
+                    Download
+                  </a>
+                  <a
+                    href={buildBambuStudioLink(file.url)}
+                    className="rounded-md bg-gradient-to-r from-[#62f1ff] to-[#4ca0ff] px-3 py-1.5 text-xs font-semibold text-[#050505] shadow-[0_15px_40px_rgba(0,0,0,0.55)] transition hover:brightness-110"
+                  >
+                    Send to slicer
+                  </a>
+                </div>
+              </div>
+            ))}
+          </div>
+          <p className="mt-2 text-xs text-zinc-500">
+            Bambu Studio opens with the selected STL/3MF. Approve any connection prompt in the slicer if one appears.
+          </p>
+        </div>
+      ) : null}
       <div>
         <h3 className="mb-2 text-sm font-semibold text-zinc-300">Line items</h3>
         <div className="space-y-3">

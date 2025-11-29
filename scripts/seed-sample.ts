@@ -16,12 +16,14 @@ const sampleJob = {
         quantity: 1,
         unitPriceCents: 12500,
         material: "PLA",
+        fileUrl: "https://files.makerworks.app/models/controller-enclosure.3mf",
       },
       {
         description: "Laser cut acrylic panels",
         quantity: 2,
         unitPriceCents: 3000,
         color: "smoke gray",
+        url: "https://files.makerworks.app/models/laser-panels.dxf",
       },
     ],
     shipping: {
@@ -40,13 +42,27 @@ const sampleJob = {
       project: "Sample MakerWorks Job",
       priority: "rush",
       approximate_print_time_hours: 6.5,
+      models: [
+        {
+          name: "Controller shell",
+          url: "https://files.makerworks.app/models/controller-shell.stl",
+        },
+        {
+          name: "Mounting bracket",
+          url: "https://files.makerworks.app/models/mounting-bracket.stl",
+        },
+      ],
+      documentation: {
+        bomUrl: "https://files.makerworks.app/docs/sample-bom.pdf",
+      },
     },
     userId: "user_sample_001",
     customerEmail: "info@makerworks.app",
     makerworksCreatedAt: new Date("2025-01-01T12:00:00Z"),
     status: JobStatus.PENDING,
     invoiceUrl: "https://invoices.example.com/makerworks-sample-job",
-    notes: "Sample job inserted via npm run seed:sample",
+    notes:
+      "Sample job inserted via npm run seed:sample.\nController jig reference: https://files.makerworks.app/models/controller-jig.stl",
   };
 
   const existing = await prisma.job.findUnique({
