@@ -1,6 +1,6 @@
 import { z } from "zod";
-import type { JobStatus } from "@/generated/prisma/enums";
-import { JobStatus as JobStatusEnum } from "@/generated/prisma/enums";
+import type { JobStatus, FulfillmentStatus } from "@/generated/prisma/enums";
+import { JobStatus as JobStatusEnum, FulfillmentStatus as FulfillmentStatusEnum } from "@/generated/prisma/enums";
 
 const numeric = z
   .union([z.number(), z.string()])
@@ -31,6 +31,14 @@ const lineItemSchema = z
   })
   .passthrough();
 
+const paymentInfoSchema = z
+  .object({
+    method: z.string().min(1).optional(),
+    status: z.string().min(1).optional(),
+  })
+  .partial()
+  .optional();
+
 export const jobPayloadSchema = z.object({
   id: z.string().min(1, "id is required"),
   paymentIntentId: z.string().min(1, "paymentIntentId is required"),
@@ -42,12 +50,17 @@ export const jobPayloadSchema = z.object({
   userId: z.string().min(1).optional().nullable(),
   customerEmail: z.string().email().optional().nullable(),
   createdAt: dateLike,
+  paymentStatus: z.string().min(1).optional(),
+  paymentMethod: z.string().min(1).optional(),
+  payment: paymentInfoSchema,
 });
 
 export type JobPayload = z.infer<typeof jobPayloadSchema>;
 
 const jobStatusValues = ["pending", "printing", "completed"] as const;
 type JobStatusInput = (typeof jobStatusValues)[number];
+const fulfillmentStatusValues = ["pending", "shipped", "picked_up"] as const;
+type FulfillmentStatusInput = (typeof fulfillmentStatusValues)[number];
 
 const jobStatusMap: Record<JobStatusInput, JobStatus> = {
   pending: JobStatusEnum.PENDING,
@@ -55,20 +68,58 @@ const jobStatusMap: Record<JobStatusInput, JobStatus> = {
   completed: JobStatusEnum.COMPLETED,
 };
 
-export const jobStatusUpdateSchema = z.object({
-  status: z.enum(jobStatusValues),
-  invoiceUrl: z.union([z.string().url("invoiceUrl must be a valid URL"), z.literal("")]).optional(),
-  notes: z.string().optional(),
-});
+const fulfillmentStatusMap: Record<FulfillmentStatusInput, FulfillmentStatus> = {
+  pending: FulfillmentStatusEnum.PENDING,
+  shipped: FulfillmentStatusEnum.SHIPPED,
+  picked_up: FulfillmentStatusEnum.PICKED_UP,
+};
+
+export const jobStatusUpdateSchema = z
+  .object({
+    status: z.enum(jobStatusValues).optional(),
+    invoiceUrl: z.union([z.string().url("invoiceUrl must be a valid URL"), z.literal("")]).optional(),
+    notes: z.string().optional(),
+    fulfillmentStatus: z.enum(fulfillmentStatusValues).optional(),
+  })
+  .refine(
+    (value) =>
+      value.status !== undefined ||
+      value.invoiceUrl !== undefined ||
+      value.notes !== undefined ||
+      value.fulfillmentStatus !== undefined,
+    { message: "At least one field must be provided" },
+  );
 
 export type JobStatusUpdatePayload = z.infer<typeof jobStatusUpdateSchema>;
 
 export function normalizeJobStatusUpdatePayload(payload: JobStatusUpdatePayload) {
   const trimmedNotes = payload.notes?.trim();
   return {
-    status: jobStatusMap[payload.status],
+    ...(payload.status ? { status: jobStatusMap[payload.status] } : {}),
     invoiceUrl:
       payload.invoiceUrl === undefined ? undefined : payload.invoiceUrl === "" ? null : payload.invoiceUrl,
     notes: trimmedNotes === undefined ? undefined : trimmedNotes.length === 0 ? null : trimmedNotes,
+    fulfillmentStatus:
+      payload.fulfillmentStatus === undefined ? undefined : fulfillmentStatusMap[payload.fulfillmentStatus],
   } as const;
 }
+
+export const manualJobSchema = z.object({
+  id: z.string().min(1, "id is required"),
+  paymentIntentId: z.string().min(1, "paymentIntentId is required"),
+  totalCents: moneyCents,
+  currency: z.string().min(1, "currency is required"),
+  makerworksCreatedAt: dateLike.optional(),
+  userId: z.string().min(1).optional().nullable(),
+  customerEmail: z.string().email().optional().nullable(),
+  lineItems: z.array(lineItemSchema).optional(),
+  shipping: z.unknown().optional(),
+  metadata: z.unknown().optional(),
+  invoiceUrl: z.union([z.string().url("invoiceUrl must be a valid URL"), z.literal("")]).optional(),
+  notes: z.string().optional(),
+  paymentStatus: z.string().min(1).optional(),
+  paymentMethod: z.string().min(1).optional(),
+  fulfillmentStatus: z.enum(fulfillmentStatusValues).optional(),
+});
+
+export type ManualJobPayload = z.infer<typeof manualJobSchema>;

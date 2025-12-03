@@ -16,6 +16,12 @@ enum JobStatus {
   COMPLETED @map("completed")
 }
 
+enum FulfillmentStatus {
+  PENDING   @map("pending")
+  SHIPPED   @map("shipped")
+  PICKED_UP @map("picked_up")
+}
+
 enum WebhookEventStatus {
   RECEIVED  @map("received")
   PROCESSED @map("processed")
@@ -36,6 +42,10 @@ model Job {
   status           JobStatus  @default(PENDING)
   invoiceUrl       String?
   notes            String?
+  paymentMethod    String?    @map("payment_method")
+  paymentStatus    String?    @map("payment_status")
+  fulfillmentStatus FulfillmentStatus @default(PENDING) @map("fulfillment_status")
+  fulfilledAt      DateTime?  @map("fulfilled_at")
   queuePosition    Int        @default(0) @map("queue_position")
   createdAt        DateTime   @default(now())
   updatedAt        DateTime   @updatedAt

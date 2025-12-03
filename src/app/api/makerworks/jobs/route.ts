@@ -4,23 +4,14 @@ import { Prisma } from "@/generated/prisma/client";
 import { JobStatus, WebhookEventStatus } from "@/generated/prisma/enums";
 import { prisma } from "@/lib/prisma";
 import { getEnv } from "@/lib/env";
-import { jobPayloadSchema } from "@/lib/validation";
+import { jobPayloadSchema, type JobPayload } from "@/lib/validation";
+import { jsonOrNull } from "@/lib/json";
 
 async function getNextQueuePosition() {
   const result = await prisma.job.aggregate({
     _max: { queuePosition: true },
   });
   return (result._max.queuePosition ?? 0) + 1;
-}
-
-function jsonOrNull(value: unknown): Prisma.InputJsonValue | Prisma.JsonNullValueInput | undefined {
-  if (value === null) {
-    return Prisma.JsonNull;
-  }
-  if (value === undefined) {
-    return undefined;
-  }
-  return value as Prisma.InputJsonValue;
 }
 
 function headersToRecord(headers: Headers) {
@@ -61,6 +52,23 @@ function extractReferenceIds(body: unknown) {
     jobId: typeof payload.id === "string" ? payload.id : null,
     paymentIntentId: typeof payload.paymentIntentId === "string" ? payload.paymentIntentId : null,
   };
+}
+
+function extractPaymentField(payload: JobPayload, key: "method" | "status") {
+  const direct =
+    key === "method"
+      ? typeof payload.paymentMethod === "string" ? payload.paymentMethod : undefined
+      : typeof payload.paymentStatus === "string" ? payload.paymentStatus : undefined;
+
+  const nestedValue =
+    payload.payment && typeof payload.payment[key] === "string" ? payload.payment[key] : undefined;
+
+  const value = nestedValue ?? direct;
+  if (!value) {
+    return null;
+  }
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : null;
 }
 
 async function setWebhookEventStatus(eventId: string | null, status: WebhookEventStatus, error?: string) {
@@ -167,6 +175,8 @@ export async function POST(request: NextRequest) {
   const lineItems = payload.lineItems as Prisma.InputJsonValue;
   const shipping = jsonOrNull(payload.shipping);
   const metadata = jsonOrNull(payload.metadata);
+  const paymentMethod = extractPaymentField(payload, "method");
+  const paymentStatus = extractPaymentField(payload, "status");
 
   const existing = await prisma.job.findUnique({ where: { id: payload.id } });
 
@@ -188,6 +198,8 @@ export async function POST(request: NextRequest) {
         makerworksCreatedAt,
         queuePosition: queuedPosition,
         status: JobStatus.PENDING,
+        paymentMethod,
+        paymentStatus,
       },
       update: {
         paymentIntentId: payload.paymentIntentId,
@@ -199,6 +211,8 @@ export async function POST(request: NextRequest) {
         userId: payload.userId ?? null,
         customerEmail: payload.customerEmail ?? null,
         makerworksCreatedAt,
+        paymentMethod,
+        paymentStatus,
       },
     });
 

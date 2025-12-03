@@ -1,7 +1,8 @@
-import { JobStatus as JobStatusEnum } from "@/generated/prisma/enums";
-import type { JobStatus } from "@/generated/prisma/enums";
+import { JobStatus as JobStatusEnum, FulfillmentStatus as FulfillmentStatusEnum } from "@/generated/prisma/enums";
+import type { JobStatus, FulfillmentStatus } from "@/generated/prisma/enums";
 
 export type StatusQueryValue = Lowercase<JobStatus>;
+export type FulfillmentQueryValue = Lowercase<FulfillmentStatus>;
 
 export const STATUS_LABELS: Record<JobStatus, string> = {
   [JobStatusEnum.PENDING]: "Pending",
@@ -9,10 +10,23 @@ export const STATUS_LABELS: Record<JobStatus, string> = {
   [JobStatusEnum.COMPLETED]: "Completed",
 };
 
+export const FULFILLMENT_STATUS_LABELS: Record<FulfillmentStatus, string> = {
+  [FulfillmentStatusEnum.PENDING]: "Not delivered",
+  [FulfillmentStatusEnum.SHIPPED]: "Shipped",
+  [FulfillmentStatusEnum.PICKED_UP]: "Picked up",
+};
+
 export const STATUS_OPTIONS = (
   Object.entries(STATUS_LABELS) as Array<[JobStatus, string]>
 ).map(([value, label]) => ({
   value: value.toLowerCase() as StatusQueryValue,
+  label,
+}));
+
+export const FULFILLMENT_OPTIONS = (
+  Object.entries(FULFILLMENT_STATUS_LABELS) as Array<[FulfillmentStatus, string]>
+).map(([value, label]) => ({
+  value: value.toLowerCase() as FulfillmentQueryValue,
   label,
 }));
 

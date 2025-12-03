@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import type { Job } from "@/generated/prisma/client";
-import { JobStatus as JobStatusEnum } from "@/generated/prisma/enums";
+import type { Job, Prisma } from "@/generated/prisma/client";
+import { JobStatus as JobStatusEnum, FulfillmentStatus as FulfillmentStatusEnum } from "@/generated/prisma/enums";
 import { ensureAdminApiAuth } from "@/lib/auth";
 import { sendReceiptEmail } from "@/lib/email";
 import { prisma } from "@/lib/prisma";
@@ -59,8 +59,9 @@ export async function PATCH(request: NextRequest, context: { params: Promise<Par
   }
 
   const normalized = normalizeJobStatusUpdatePayload(parsed.data);
+  const nextStatus = normalized.status;
   const shouldSendReceipt =
-    normalized.status === JobStatusEnum.COMPLETED && existing.status !== JobStatusEnum.COMPLETED;
+    nextStatus !== undefined && nextStatus === JobStatusEnum.COMPLETED && existing.status !== JobStatusEnum.COMPLETED;
 
   if (shouldSendReceipt && !existing.customerEmail) {
     return NextResponse.json(
@@ -69,13 +70,21 @@ export async function PATCH(request: NextRequest, context: { params: Promise<Par
     );
   }
 
+  const data: Prisma.JobUpdateInput = {
+    ...(nextStatus !== undefined ? { status: nextStatus } : {}),
+    ...(normalized.invoiceUrl !== undefined ? { invoiceUrl: normalized.invoiceUrl } : {}),
+    ...(normalized.notes !== undefined ? { notes: normalized.notes } : {}),
+  };
+
+  if (normalized.fulfillmentStatus !== undefined) {
+    data.fulfillmentStatus = normalized.fulfillmentStatus;
+    data.fulfilledAt =
+      normalized.fulfillmentStatus === FulfillmentStatusEnum.PENDING ? null : new Date();
+  }
+
   const updated = await prisma.job.update({
     where: { paymentIntentId },
-    data: {
-      status: normalized.status,
-      ...(normalized.invoiceUrl !== undefined ? { invoiceUrl: normalized.invoiceUrl } : {}),
-      ...(normalized.notes !== undefined ? { notes: normalized.notes } : {}),
-    },
+    data,
   });
 
   if (shouldSendReceipt) {
@@ -88,6 +97,8 @@ export async function PATCH(request: NextRequest, context: { params: Promise<Par
           status: existing.status,
           invoiceUrl: existing.invoiceUrl,
           notes: existing.notes,
+          fulfillmentStatus: existing.fulfillmentStatus,
+          fulfilledAt: existing.fulfilledAt,
         },
       });
       const message = error instanceof Error ? error.message : "Failed to send receipt email";

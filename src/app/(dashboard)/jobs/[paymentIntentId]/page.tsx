@@ -39,6 +39,8 @@ export default async function JobDetailPage({ params }: PageProps) {
           defaultInvoiceUrl={job.invoiceUrl}
           defaultNotes={job.notes}
           customerEmail={job.customerEmail}
+          currentFulfillmentStatus={job.fulfillmentStatus}
+          fulfilledAt={job.fulfilledAt ? job.fulfilledAt.toISOString() : null}
         />
         <TestEmailForm defaultRecipient={job.customerEmail} />
       </section>

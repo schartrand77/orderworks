@@ -1,6 +1,6 @@
 import "dotenv/config";
 import { PrismaClient } from "../src/generated/prisma/client";
-import { JobStatus } from "../src/generated/prisma/enums";
+import { JobStatus, FulfillmentStatus } from "../src/generated/prisma/enums";
 
 const prisma = new PrismaClient();
 
@@ -60,6 +60,9 @@ const sampleJob = {
     customerEmail: "info@makerworks.app",
     makerworksCreatedAt: new Date("2025-01-01T12:00:00Z"),
     status: JobStatus.PENDING,
+    paymentMethod: "card",
+    paymentStatus: "paid",
+    fulfillmentStatus: FulfillmentStatus.PENDING,
     invoiceUrl: "https://invoices.example.com/makerworks-sample-job",
     notes:
       "Sample job inserted via npm run seed:sample.\nController jig reference: https://files.makerworks.app/models/controller-jig.stl",

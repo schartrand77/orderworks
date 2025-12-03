@@ -1,6 +1,7 @@
 import Image from "next/image";
 import type { Job } from "@/generated/prisma/client";
-import { formatCurrency, formatDate, STATUS_LABELS } from "@/lib/format";
+import { FulfillmentStatus as FulfillmentStatusEnum } from "@/generated/prisma/enums";
+import { formatCurrency, formatDate, STATUS_LABELS, FULFILLMENT_STATUS_LABELS } from "@/lib/format";
 import { deriveApproximatePrintTime } from "@/lib/print-time";
 import { buildBambuStudioLink, extractModelFiles } from "@/lib/model-files";
 
@@ -14,6 +15,17 @@ export function JobDetail({ job }: Props) {
   const metadata = job.metadata as unknown;
   const printTime = deriveApproximatePrintTime(job.metadata);
   const modelFiles = extractModelFiles(job);
+  const paymentMethodLabel = humanize(job.paymentMethod);
+  const paymentStatusLabel = humanize(job.paymentStatus);
+  const paymentSummary =
+    paymentMethodLabel || paymentStatusLabel
+      ? [paymentMethodLabel, paymentStatusLabel].filter(Boolean).join(" • ")
+      : null;
+  const fulfillmentLabel = FULFILLMENT_STATUS_LABELS[job.fulfillmentStatus];
+  const fulfilledTimestamp =
+    job.fulfilledAt && job.fulfillmentStatus !== FulfillmentStatusEnum.PENDING
+      ? formatDate(job.fulfilledAt)
+      : null;
 
   return (
     <section className="space-y-6 rounded-2xl border border-white/10 bg-[#070707]/90 p-6 shadow-[0_30px_80px_rgba(0,0,0,0.65)]">
@@ -52,6 +64,29 @@ export function JobDetail({ job }: Props) {
           <dd className="font-mono text-xs text-zinc-300">{job.paymentIntentId}</dd>
         </div>
         <div>
+          <dt className="font-medium text-zinc-400">Payment</dt>
+          <dd className="text-white">
+            {paymentSummary ? (
+              <span className="inline-flex items-center gap-2">
+                {paymentMethodLabel ? <span>{paymentMethodLabel}</span> : null}
+                {paymentStatusLabel ? (
+                  <span
+                    className={`rounded-full border px-2 py-0.5 text-[0.7rem] font-medium ${
+                      paymentStatusLabel.toLowerCase() === "paid"
+                        ? "border-emerald-400/40 bg-emerald-500/10 text-emerald-200"
+                        : "border-amber-400/40 bg-amber-500/10 text-amber-100"
+                    }`}
+                  >
+                    {paymentStatusLabel}
+                  </span>
+                ) : null}
+              </span>
+            ) : (
+              "Not provided"
+            )}
+          </dd>
+        </div>
+        <div>
           <dt className="font-medium text-zinc-400">Customer email</dt>
           <dd className="text-white">{job.customerEmail ?? "Not provided"}</dd>
         </div>
@@ -66,6 +101,17 @@ export function JobDetail({ job }: Props) {
         <div>
           <dt className="font-medium text-zinc-400">MakerWorks created</dt>
           <dd className="text-white">{formatDate(job.makerworksCreatedAt)}</dd>
+        </div>
+        <div>
+          <dt className="font-medium text-zinc-400">Fulfillment</dt>
+          <dd className="text-white">
+            <div>{fulfillmentLabel}</div>
+            {job.fulfillmentStatus === FulfillmentStatusEnum.PENDING ? (
+              <p className="text-xs text-zinc-500">Not yet shipped or picked up.</p>
+            ) : fulfilledTimestamp ? (
+              <p className="text-xs text-zinc-400">Updated {fulfilledTimestamp}</p>
+            ) : null}
+          </dd>
         </div>
         <div>
           <dt className="font-medium text-zinc-400">Invoice URL</dt>
@@ -161,4 +207,15 @@ export function JobDetail({ job }: Props) {
       </div>
     </section>
   );
+}
+
+function humanize(value?: string | null) {
+  if (!value) {
+    return null;
+  }
+  const normalized = value.replace(/[_-]+/g, " ").trim();
+  if (!normalized) {
+    return null;
+  }
+  return normalized.charAt(0).toUpperCase() + normalized.slice(1);
 }

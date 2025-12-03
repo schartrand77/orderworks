@@ -2,8 +2,15 @@
 
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
-import type { JobStatus } from "@/generated/prisma/enums";
-import { STATUS_LABELS, type StatusQueryValue } from "@/lib/format";
+import type { JobStatus, FulfillmentStatus } from "@/generated/prisma/enums";
+import {
+  STATUS_LABELS,
+  type StatusQueryValue,
+  FULFILLMENT_STATUS_LABELS,
+  FULFILLMENT_OPTIONS,
+  type FulfillmentQueryValue,
+  formatDate,
+} from "@/lib/format";
 import { useNotifications } from "@/components/notifications-provider";
 import { handleUnauthorizedResponse } from "@/lib/client-auth";
 
@@ -13,6 +20,8 @@ interface Props {
   defaultInvoiceUrl?: string | null;
   defaultNotes?: string | null;
   customerEmail?: string | null;
+  currentFulfillmentStatus: FulfillmentStatus;
+  fulfilledAt?: string | null;
 }
 
 const STATUS_SELECT_OPTIONS = (Object.entries(STATUS_LABELS) as Array<[JobStatus, string]>).map(
@@ -29,14 +38,24 @@ export function JobStatusForm({
   defaultInvoiceUrl,
   defaultNotes,
   customerEmail,
+  currentFulfillmentStatus,
+  fulfilledAt,
 }: Props) {
   const router = useRouter();
   const [status, setStatus] = useState<StatusQueryValue>(currentStatus.toLowerCase() as StatusQueryValue);
   const [invoiceUrl, setInvoiceUrl] = useState(defaultInvoiceUrl ?? "");
   const [notes, setNotes] = useState(defaultNotes ?? "");
+  const [fulfillmentStatus, setFulfillmentStatus] = useState<FulfillmentQueryValue>(
+    currentFulfillmentStatus.toLowerCase() as FulfillmentQueryValue,
+  );
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { notify } = useNotifications();
+  const [lastFulfilledAt, setLastFulfilledAt] = useState<Date | null>(
+    fulfilledAt ? new Date(fulfilledAt) : null,
+  );
+  const fulfillmentStatusLabel =
+    FULFILLMENT_STATUS_LABELS[fulfillmentStatus.toUpperCase() as FulfillmentStatus] ?? "Not delivered";
 
   const requiresReceipt = status === "completed";
   const hasCustomerEmail = Boolean(customerEmail);
@@ -61,7 +80,7 @@ export function JobStatusForm({
       const response = await fetch(`/api/jobs/${encodeURIComponent(paymentIntentId)}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status, invoiceUrl, notes }),
+        body: JSON.stringify({ status, invoiceUrl, notes, fulfillmentStatus }),
       });
 
       if (handleUnauthorizedResponse(response.status)) {
@@ -78,6 +97,12 @@ export function JobStatusForm({
       setStatus(nextStatus);
       setInvoiceUrl(body.job.invoiceUrl ?? "");
       setNotes(body.job.notes ?? "");
+      if (body.job?.fulfillmentStatus) {
+        setFulfillmentStatus((body.job.fulfillmentStatus as FulfillmentStatus).toLowerCase() as FulfillmentQueryValue);
+      }
+      if (body.job && Object.prototype.hasOwnProperty.call(body.job, "fulfilledAt")) {
+        setLastFulfilledAt(body.job.fulfilledAt ? new Date(body.job.fulfilledAt as string) : null);
+      }
       const updatedJobEmail =
         typeof body.job?.customerEmail === "string" ? (body.job.customerEmail as string) : null;
       if (nextStatus === "completed") {
@@ -121,6 +146,33 @@ export function JobStatusForm({
             </option>
           ))}
         </select>
+      </div>
+      <div>
+        <label className="mb-1 block text-sm font-medium text-zinc-200" htmlFor="fulfillment-status">
+          Fulfillment status
+        </label>
+        <select
+          id="fulfillment-status"
+          value={fulfillmentStatus}
+          onChange={(event) => setFulfillmentStatus(event.target.value as FulfillmentQueryValue)}
+          className="w-full rounded-md border border-white/10 bg-[#050505] px-3 py-2 text-sm text-zinc-100 outline-none transition focus:border-white/40"
+          disabled={isSubmitting}
+        >
+          {FULFILLMENT_OPTIONS.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+        {lastFulfilledAt && fulfillmentStatus !== "pending" ? (
+          <p className="mt-1 text-xs text-zinc-400">
+            Marked {fulfillmentStatusLabel.toLowerCase()} {formatDate(lastFulfilledAt)}.
+          </p>
+        ) : (
+          <p className="mt-1 text-xs text-zinc-500">
+            Track when the job leaves the shop by marking it shipped or picked up.
+          </p>
+        )}
       </div>
       <div>
         <label className="mb-1 block text-sm font-medium text-zinc-200" htmlFor="invoiceUrl">
