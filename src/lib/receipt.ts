@@ -10,7 +10,6 @@ export function buildReceiptEmail(job: Job) {
   const createdAt = formatDate(job.makerworksCreatedAt);
   const subject = `Receipt for MakerWorks job ${job.id}`;
 
-  const invoiceLine = job.invoiceUrl ? `Invoice: ${job.invoiceUrl}\n` : "";
   const notesLine = job.notes ? `Notes:\n${job.notes}\n` : "";
   const text = [
     `Thanks for working with MakerWorks!`,
@@ -19,7 +18,6 @@ export function buildReceiptEmail(job: Job) {
     `Payment intent: ${job.paymentIntentId}`,
     `Created: ${createdAt}`,
     `Total: ${total}`,
-    invoiceLine,
     notesLine,
     `Line items:`,
     stringify(job.lineItems),
@@ -43,11 +41,6 @@ export function buildReceiptEmail(job: Job) {
         <li><strong>Created:</strong> ${createdAt}</li>
         <li><strong>Total:</strong> ${total}</li>
       </ul>
-      ${
-        job.invoiceUrl
-          ? `<p><strong>Invoice:</strong> <a href="${job.invoiceUrl}" target="_blank" rel="noopener noreferrer">${job.invoiceUrl}</a></p>`
-          : ""
-      }
       ${job.notes ? `<p><strong>Notes:</strong><br />${job.notes.replace(/\n/g, "<br />")}</p>` : ""}
       <h2 style="font-size:16px;margin-top:20px;">Line items</h2>
       <pre style="background:#f4f4f5;padding:12px;border-radius:6px;white-space:pre-wrap;">${stringify(job.lineItems)}</pre>

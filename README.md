@@ -168,17 +168,17 @@ Returns the stored job for the given payment intent id.
 
 ### PATCH `/api/jobs/:paymentIntentId`
 
-Updates a job's status (pending, printing, or completed) plus optional `invoiceUrl` and `notes`. When the status transitions to `completed`, a receipt email is sent to the job's `customerEmail`.
+Updates a job's status (pending, printing, or completed) along with optional `notes` and `fulfillmentStatus`. When the status transitions to `completed`, a receipt email is sent to the job's `customerEmail`.
 
 ```json
 {
   "status": "completed",
-  "invoiceUrl": "https://invoices.example.com/123",
-  "notes": "Optional completion notes"
+  "notes": "Optional completion notes",
+  "fulfillmentStatus": "shipped"
 }
 ```
 
-Omit `invoiceUrl` or send an empty string to leave it unchanged/clear it. Requests missing a customer email or the required email environment variables will fail when attempting to complete a job.
+Requests missing a customer email or the required email environment variables will fail when attempting to complete a job.
 
 ### DELETE `/api/jobs/:paymentIntentId`
 

@@ -113,7 +113,6 @@ export function ManualJobForm() {
   const [customerEmail, setCustomerEmail] = useState("");
   const [userId, setUserId] = useState("");
   const [makerworksCreatedAt, setMakerworksCreatedAt] = useState(formatDateTimeLocal(new Date()));
-  const [invoiceUrl, setInvoiceUrl] = useState("");
   const [notes, setNotes] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("");
   const [paymentStatus, setPaymentStatus] = useState("");
@@ -134,7 +133,6 @@ export function ManualJobForm() {
     setCustomerEmail("");
     setUserId("");
     setMakerworksCreatedAt(formatDateTimeLocal(new Date()));
-    setInvoiceUrl("");
     setNotes("");
     setPaymentMethod("");
     setPaymentStatus("");
@@ -196,7 +194,6 @@ export function ManualJobForm() {
         lineItems: parsedLineItems,
         customerEmail: customerEmail.trim() ? customerEmail.trim() : null,
         userId: userId.trim() ? userId.trim() : null,
-        invoiceUrl: invoiceUrl.trim(),
         notes: notes.trim(),
         metadata,
         shipping,
@@ -376,19 +373,6 @@ export function ManualJobForm() {
                 value={userId}
                 onChange={(event) => setUserId(event.target.value)}
                 placeholder="user_manual_001"
-                className="w-full rounded-md border border-white/10 bg-[#050505] px-3 py-2 text-sm text-zinc-100 outline-none transition focus:border-white/40"
-              />
-            </div>
-            <div>
-              <label htmlFor="manual-invoice-url" className="mb-1 block text-sm font-medium text-zinc-200">
-                Invoice URL
-              </label>
-              <input
-                id="manual-invoice-url"
-                type="url"
-                value={invoiceUrl}
-                onChange={(event) => setInvoiceUrl(event.target.value)}
-                placeholder="https://invoices.example.com/job"
                 className="w-full rounded-md border border-white/10 bg-[#050505] px-3 py-2 text-sm text-zinc-100 outline-none transition focus:border-white/40"
               />
             </div>

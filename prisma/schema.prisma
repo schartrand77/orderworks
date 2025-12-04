@@ -40,7 +40,6 @@ model Job {
   customerEmail    String?
   makerworksCreatedAt DateTime @map("makerworks_created_at")
   status           JobStatus  @default(PENDING)
-  invoiceUrl       String?
   notes            String?
   paymentMethod    String?    @map("payment_method")
   paymentStatus    String?    @map("payment_status")

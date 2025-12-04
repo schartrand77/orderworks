@@ -72,7 +72,6 @@ export async function PATCH(request: NextRequest, context: { params: Promise<Par
 
   const data: Prisma.JobUpdateInput = {
     ...(nextStatus !== undefined ? { status: nextStatus } : {}),
-    ...(normalized.invoiceUrl !== undefined ? { invoiceUrl: normalized.invoiceUrl } : {}),
     ...(normalized.notes !== undefined ? { notes: normalized.notes } : {}),
   };
 
@@ -95,7 +94,6 @@ export async function PATCH(request: NextRequest, context: { params: Promise<Par
         where: { paymentIntentId },
         data: {
           status: existing.status,
-          invoiceUrl: existing.invoiceUrl,
           notes: existing.notes,
           fulfillmentStatus: existing.fulfillmentStatus,
           fulfilledAt: existing.fulfilledAt,

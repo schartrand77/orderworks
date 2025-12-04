@@ -17,7 +17,6 @@ import { handleUnauthorizedResponse } from "@/lib/client-auth";
 interface Props {
   paymentIntentId: string;
   currentStatus: JobStatus;
-  defaultInvoiceUrl?: string | null;
   defaultNotes?: string | null;
   customerEmail?: string | null;
   currentFulfillmentStatus: FulfillmentStatus;
@@ -35,7 +34,6 @@ const STATUS_SELECT_OPTIONS = (Object.entries(STATUS_LABELS) as Array<[JobStatus
 export function JobStatusForm({
   paymentIntentId,
   currentStatus,
-  defaultInvoiceUrl,
   defaultNotes,
   customerEmail,
   currentFulfillmentStatus,
@@ -43,7 +41,6 @@ export function JobStatusForm({
 }: Props) {
   const router = useRouter();
   const [status, setStatus] = useState<StatusQueryValue>(currentStatus.toLowerCase() as StatusQueryValue);
-  const [invoiceUrl, setInvoiceUrl] = useState(defaultInvoiceUrl ?? "");
   const [notes, setNotes] = useState(defaultNotes ?? "");
   const [fulfillmentStatus, setFulfillmentStatus] = useState<FulfillmentQueryValue>(
     currentFulfillmentStatus.toLowerCase() as FulfillmentQueryValue,
@@ -80,7 +77,7 @@ export function JobStatusForm({
       const response = await fetch(`/api/jobs/${encodeURIComponent(paymentIntentId)}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status, invoiceUrl, notes, fulfillmentStatus }),
+        body: JSON.stringify({ status, notes, fulfillmentStatus }),
       });
 
       if (handleUnauthorizedResponse(response.status)) {
@@ -95,7 +92,6 @@ export function JobStatusForm({
 
       const nextStatus = (body.job.status as JobStatus).toLowerCase() as StatusQueryValue;
       setStatus(nextStatus);
-      setInvoiceUrl(body.job.invoiceUrl ?? "");
       setNotes(body.job.notes ?? "");
       if (body.job?.fulfillmentStatus) {
         setFulfillmentStatus((body.job.fulfillmentStatus as FulfillmentStatus).toLowerCase() as FulfillmentQueryValue);
@@ -173,21 +169,6 @@ export function JobStatusForm({
             Track when the job leaves the shop by marking it shipped or picked up.
           </p>
         )}
-      </div>
-      <div>
-        <label className="mb-1 block text-sm font-medium text-zinc-200" htmlFor="invoiceUrl">
-          Invoice URL
-        </label>
-        <input
-          id="invoiceUrl"
-          name="invoiceUrl"
-          type="url"
-          value={invoiceUrl}
-          onChange={(event) => setInvoiceUrl(event.target.value)}
-          placeholder="https://"
-          className="w-full rounded-md border border-white/10 bg-[#050505] px-3 py-2 text-sm text-zinc-100 outline-none transition focus:border-white/40"
-          disabled={isSubmitting}
-        />
       </div>
       <div>
         <label className="mb-1 block text-sm font-medium text-zinc-200" htmlFor="notes">

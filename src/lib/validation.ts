@@ -77,14 +77,12 @@ const fulfillmentStatusMap: Record<FulfillmentStatusInput, FulfillmentStatus> = 
 export const jobStatusUpdateSchema = z
   .object({
     status: z.enum(jobStatusValues).optional(),
-    invoiceUrl: z.union([z.string().url("invoiceUrl must be a valid URL"), z.literal("")]).optional(),
     notes: z.string().optional(),
     fulfillmentStatus: z.enum(fulfillmentStatusValues).optional(),
   })
   .refine(
     (value) =>
       value.status !== undefined ||
-      value.invoiceUrl !== undefined ||
       value.notes !== undefined ||
       value.fulfillmentStatus !== undefined,
     { message: "At least one field must be provided" },
@@ -96,8 +94,6 @@ export function normalizeJobStatusUpdatePayload(payload: JobStatusUpdatePayload)
   const trimmedNotes = payload.notes?.trim();
   return {
     ...(payload.status ? { status: jobStatusMap[payload.status] } : {}),
-    invoiceUrl:
-      payload.invoiceUrl === undefined ? undefined : payload.invoiceUrl === "" ? null : payload.invoiceUrl,
     notes: trimmedNotes === undefined ? undefined : trimmedNotes.length === 0 ? null : trimmedNotes,
     fulfillmentStatus:
       payload.fulfillmentStatus === undefined ? undefined : fulfillmentStatusMap[payload.fulfillmentStatus],
@@ -115,7 +111,6 @@ export const manualJobSchema = z.object({
   lineItems: z.array(lineItemSchema).optional(),
   shipping: z.unknown().optional(),
   metadata: z.unknown().optional(),
-  invoiceUrl: z.union([z.string().url("invoiceUrl must be a valid URL"), z.literal("")]).optional(),
   notes: z.string().optional(),
   paymentStatus: z.string().min(1).optional(),
   paymentMethod: z.string().min(1).optional(),

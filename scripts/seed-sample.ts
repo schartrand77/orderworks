@@ -63,7 +63,6 @@ const sampleJob = {
     paymentMethod: "card",
     paymentStatus: "paid",
     fulfillmentStatus: FulfillmentStatus.PENDING,
-    invoiceUrl: "https://invoices.example.com/makerworks-sample-job",
     notes:
       "Sample job inserted via npm run seed:sample.\nController jig reference: https://files.makerworks.app/models/controller-jig.stl",
   };

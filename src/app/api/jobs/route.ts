@@ -97,14 +97,6 @@ export async function POST(request: NextRequest) {
   const normalizedNotes = payload.notes?.trim();
   const normalizedPaymentMethod = payload.paymentMethod?.trim();
   const normalizedPaymentStatus = payload.paymentStatus?.trim();
-  const invoiceUrl =
-    payload.invoiceUrl === undefined
-      ? null
-      : payload.invoiceUrl === ""
-        ? null
-        : payload.invoiceUrl.trim().length > 0
-          ? payload.invoiceUrl.trim()
-          : null;
   const metadata = jsonOrNull(payload.metadata);
   const shipping = jsonOrNull(payload.shipping);
   const queuePosition = await getNextQueuePosition();
@@ -133,7 +125,6 @@ export async function POST(request: NextRequest) {
         makerworksCreatedAt,
         queuePosition,
         status: JobStatus.PENDING,
-        invoiceUrl,
         notes: normalizedNotes && normalizedNotes.length > 0 ? normalizedNotes : null,
         paymentMethod:
           normalizedPaymentMethod && normalizedPaymentMethod.length > 0 ? normalizedPaymentMethod : null,

@@ -113,23 +113,6 @@ export function JobDetail({ job }: Props) {
             ) : null}
           </dd>
         </div>
-        <div>
-          <dt className="font-medium text-zinc-400">Invoice URL</dt>
-          <dd className="text-white">
-            {job.invoiceUrl ? (
-              <a
-                className="text-zinc-200 underline decoration-white/30 underline-offset-4 transition hover:text-white hover:decoration-white/60"
-                href={job.invoiceUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                View invoice
-              </a>
-            ) : (
-              "Not provided"
-            )}
-          </dd>
-        </div>
         <div className="sm:col-span-2">
           <dt className="font-medium text-zinc-400">Notes</dt>
           <dd className="whitespace-pre-wrap text-white">{job.notes ?? "No additional notes"}</dd>

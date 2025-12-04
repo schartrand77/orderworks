@@ -36,7 +36,6 @@ export default async function JobDetailPage({ params }: PageProps) {
         <JobStatusForm
           paymentIntentId={job.paymentIntentId}
           currentStatus={job.status}
-          defaultInvoiceUrl={job.invoiceUrl}
           defaultNotes={job.notes}
           customerEmail={job.customerEmail}
           currentFulfillmentStatus={job.fulfillmentStatus}

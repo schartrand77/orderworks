@@ -99,7 +99,7 @@ export default function Page({ searchParams }: { searchParams?: Promise<SearchPa
           <p className="text-xs font-semibold uppercase tracking-[0.45em] text-zinc-500">MakerWorks queue</p>
           <h1 className="text-4xl font-semibold text-white">Fabrication jobs</h1>
           <p className="text-sm text-zinc-400">
-            Review incoming MakerWorks fabrication requests, track their status, and complete jobs once invoices are ready.
+            Review incoming MakerWorks fabrication requests, track their status, and complete jobs once they&apos;re ready for delivery.
           </p>
         </div>
         <div className="lg:max-w-xs">
