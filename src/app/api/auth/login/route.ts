@@ -12,6 +12,17 @@ interface LoginPayload {
   password?: unknown;
 }
 
+function isSecureRequest(request: NextRequest) {
+  const forwardedProto = request.headers.get("x-forwarded-proto");
+  if (forwardedProto) {
+    const proto = forwardedProto.split(",")[0]?.trim().toLowerCase();
+    if (proto) {
+      return proto === "https";
+    }
+  }
+  return request.nextUrl.protocol === "https:";
+}
+
 export async function POST(request: NextRequest) {
   if (!isAdminAuthConfigured()) {
     return NextResponse.json(
@@ -48,7 +59,7 @@ export async function POST(request: NextRequest) {
     maxAge: ADMIN_SESSION_MAX_AGE_SECONDS,
     httpOnly: true,
     sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
+    secure: isSecureRequest(request),
     path: "/",
   });
 
