@@ -21,11 +21,7 @@ function getAdminCredentials(): AdminCredentials | null {
 }
 
 function getSessionSecret() {
-  return (
-    process.env.ADMIN_SESSION_SECRET?.trim() ??
-    process.env.MAKERWORKS_WEBHOOK_SECRET?.trim() ??
-    "orderworks-session-secret"
-  );
+  return process.env.ADMIN_SESSION_SECRET?.trim() ?? "orderworks-session-secret";
 }
 
 function safeCompare(a: string, b: string) {

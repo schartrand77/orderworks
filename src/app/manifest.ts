@@ -4,7 +4,7 @@ export default function manifest(): MetadataRoute.Manifest {
   return {
     name: "OrderWorks Admin",
     short_name: "OrderWorks",
-    description: "Administer MakerWorks fabrication jobs and MakerWorks webhook ingestion.",
+    description: "Administer MakerWorks fabrication jobs and fulfillment.",
     start_url: "/",
     display: "standalone",
     background_color: "#030712",

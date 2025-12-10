@@ -9,15 +9,11 @@ export interface MakerWorksStatusPayload {
 }
 
 export interface MakerWorksHealthPayload extends MakerWorksStatusPayload {
-  events: {
-    total: number;
-    received: number;
-    processed: number;
-    failed: number;
-    lastEventAt: string | null;
-  };
   jobs: {
-    total: number;
+    orderworksTotal: number;
+    makerworksTotal: number;
+    lastMakerWorksUpdate: string | null;
+    lastSyncAt: string | null;
   };
   appUptimeSeconds: number;
 }

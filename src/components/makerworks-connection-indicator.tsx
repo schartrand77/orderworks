@@ -17,27 +17,27 @@ interface StatusMeta {
 const STATUS_META: Record<DisplayStatus, StatusMeta> = {
   connected: {
     label: "Connected to MakerWorks",
-    description: "Receiving MakerWorks webhook payloads.",
+    description: "Synced with the MakerWorks database.",
     dotClass: "bg-emerald-400 shadow-[0_0_12px_rgba(52,211,153,0.7)]",
   },
   waiting: {
     label: "Waiting for MakerWorks",
-    description: "No MakerWorks payloads have been ingested yet.",
+    description: "No MakerWorks jobs have been imported yet.",
     dotClass: "bg-zinc-500",
   },
   stale: {
     label: "Connection stale",
-    description: "No recent MakerWorks payloads detected.",
+    description: "No recent MakerWorks jobs detected.",
     dotClass: "bg-amber-300 shadow-[0_0_10px_rgba(252,211,77,0.65)]",
   },
   error: {
     label: "Status unavailable",
-    description: "Unable to check MakerWorks connection.",
+    description: "Unable to check the MakerWorks database.",
     dotClass: "bg-red-400 shadow-[0_0_12px_rgba(248,113,113,0.65)]",
   },
   loading: {
     label: "Checking MakerWorks connection",
-    description: "Fetching current statusâ€¦",
+    description: "Fetching current status…",
     dotClass: "bg-zinc-600 animate-pulse",
   },
 };
@@ -90,8 +90,8 @@ export function MakerWorksConnectionIndicator() {
   const secondaryText = useMemo(() => {
     if (displayStatus === "connected" || displayStatus === "stale") {
       return statusPayload?.lastJobReceivedAt
-        ? `Last payload ${formatRelativeTime(statusPayload.lastJobReceivedAt)}`
-        : "No MakerWorks payloads yet.";
+        ? `Last MakerWorks job ${formatRelativeTime(statusPayload.lastJobReceivedAt)}`
+        : "No MakerWorks jobs yet.";
     }
     if (displayStatus === "error" && fetchError) {
       return fetchError;
@@ -140,3 +140,6 @@ function formatRelativeTime(timestamp: string) {
   const diffDays = Math.floor(diffHours / 24);
   return `${diffDays}d ago`;
 }
+
+
+

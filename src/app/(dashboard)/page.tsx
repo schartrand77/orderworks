@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import type { JobStatus } from "@/generated/prisma/enums";
 import { prisma } from "@/lib/prisma";
 import { parseJobFilters } from "@/lib/job-query";
+import { syncMakerWorksJobs } from "@/lib/makerworks-sync";
 import { JobFilters } from "@/components/job-filters";
 import { JobTable } from "@/components/job-table";
 import { MakerWorksConnectionIndicator } from "@/components/makerworks-connection-indicator";
@@ -57,6 +58,8 @@ async function JobsSection({ searchParams }: { searchParams?: Promise<SearchPara
   } catch (cause) {
     error = cause instanceof Error ? cause.message : "Invalid filters";
   }
+
+  await syncMakerWorksJobs();
 
   const jobs = await prisma.job.findMany({
     where: {

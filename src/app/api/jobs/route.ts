@@ -5,6 +5,8 @@ import { prisma } from "@/lib/prisma";
 import { parseJobFilters } from "@/lib/job-query";
 import { manualJobSchema } from "@/lib/validation";
 import { jsonOrNull } from "@/lib/json";
+import { getNextQueuePosition } from "@/lib/job-queue";
+import { syncMakerWorksJobs } from "@/lib/makerworks-sync";
 
 export async function GET(request: NextRequest) {
   const unauthorized = ensureAdminApiAuth(request);
@@ -12,6 +14,7 @@ export async function GET(request: NextRequest) {
     return unauthorized;
   }
   try {
+    await syncMakerWorksJobs();
     const filters = parseJobFilters(request.nextUrl.searchParams);
 
     const jobs = await prisma.job.findMany({
@@ -38,13 +41,6 @@ export async function GET(request: NextRequest) {
   }
 }
 
-async function getNextQueuePosition() {
-  const result = await prisma.job.aggregate({
-    _max: { queuePosition: true },
-  });
-  return (result._max.queuePosition ?? 0) + 1;
-}
-
 function buildFallbackLineItem(jobId: string, totalCents: number) {
   return [
     {
@@ -60,6 +56,7 @@ export async function POST(request: NextRequest) {
   if (unauthorized) {
     return unauthorized;
   }
+  await syncMakerWorksJobs();
 
   let json: unknown;
   try {
@@ -123,6 +120,7 @@ export async function POST(request: NextRequest) {
         userId: normalizedUserId && normalizedUserId.length > 0 ? normalizedUserId : null,
         customerEmail: normalizedCustomerEmail && normalizedCustomerEmail.length > 0 ? normalizedCustomerEmail : null,
         makerworksCreatedAt,
+        makerworksUpdatedAt: makerworksCreatedAt,
         queuePosition,
         status: JobStatus.PENDING,
         notes: normalizedNotes && normalizedNotes.length > 0 ? normalizedNotes : null,

@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "OrderWorks Admin",
-  description: "Administer MakerWorks fabrication jobs, webhook ingestion, and fulfillment.",
+  description: "Administer MakerWorks fabrication jobs and fulfillment.",
   manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,

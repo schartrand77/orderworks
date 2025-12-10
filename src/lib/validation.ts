@@ -31,32 +31,6 @@ const lineItemSchema = z
   })
   .passthrough();
 
-const paymentInfoSchema = z
-  .object({
-    method: z.string().min(1).optional(),
-    status: z.string().min(1).optional(),
-  })
-  .partial()
-  .optional();
-
-export const jobPayloadSchema = z.object({
-  id: z.string().min(1, "id is required"),
-  paymentIntentId: z.string().min(1, "paymentIntentId is required"),
-  totalCents: numeric,
-  currency: z.string().min(1, "currency is required"),
-  lineItems: z.array(lineItemSchema).min(1, "lineItems must include at least one entry"),
-  shipping: z.unknown().optional().nullable(),
-  metadata: z.record(z.string(), z.unknown()).optional().nullable(),
-  userId: z.string().min(1).optional().nullable(),
-  customerEmail: z.string().email().optional().nullable(),
-  createdAt: dateLike,
-  paymentStatus: z.string().min(1).optional(),
-  paymentMethod: z.string().min(1).optional(),
-  payment: paymentInfoSchema,
-});
-
-export type JobPayload = z.infer<typeof jobPayloadSchema>;
-
 const jobStatusValues = ["pending", "printing", "completed"] as const;
 type JobStatusInput = (typeof jobStatusValues)[number];
 const fulfillmentStatusValues = ["pending", "shipped", "picked_up"] as const;

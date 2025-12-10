@@ -1,49 +1,31 @@
 import { NextResponse } from "next/server";
-import { WebhookEventStatus } from "@/generated/prisma/enums";
+import { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { fetchMakerWorksStatus, CONNECTED_THRESHOLD_MINUTES } from "@/lib/makerworks-status";
+import { getMakerWorksSyncTelemetry, syncMakerWorksJobs } from "@/lib/makerworks-sync";
 import type { MakerWorksHealthPayload } from "@/types/makerworks-status";
 
 export const dynamic = "force-dynamic";
 
 async function gatherHealthPayload(): Promise<MakerWorksHealthPayload> {
-  const [statusPayload, groupedEvents, lastEvent, totalJobs] = await Promise.all([
+  await syncMakerWorksJobs();
+  const [statusPayload, orderworksTotal, makerworksTotalResult] = await Promise.all([
     fetchMakerWorksStatus(),
-    prisma.makerWorksWebhookEvent.groupBy({
-      by: ["status"],
-      _count: { _all: true },
-    }),
-    prisma.makerWorksWebhookEvent.findFirst({
-      orderBy: { createdAt: "desc" },
-      select: { createdAt: true },
-    }),
     prisma.job.count(),
+    prisma.$queryRaw<{ total: number }[]>(Prisma.sql`SELECT COUNT(*)::int AS total FROM public."jobs"`),
   ]);
-
-  const eventsSummary = groupedEvents.reduce(
-    (acc, { status, _count }) => {
-      const count = _count._all;
-      acc.total += count;
-      if (status === WebhookEventStatus.RECEIVED) {
-        acc.received = count;
-      } else if (status === WebhookEventStatus.PROCESSED) {
-        acc.processed = count;
-      } else if (status === WebhookEventStatus.FAILED) {
-        acc.failed = count;
-      }
-      return acc;
-    },
-    { total: 0, received: 0, processed: 0, failed: 0 },
-  );
+  const telemetry = getMakerWorksSyncTelemetry();
+  const makerworksTotal = makerworksTotalResult[0]?.total ?? 0;
 
   return {
     ...statusPayload,
-    events: {
-      ...eventsSummary,
-      lastEventAt: lastEvent?.createdAt?.toISOString() ?? null,
-    },
     jobs: {
-      total: totalJobs,
+      orderworksTotal,
+      makerworksTotal,
+      lastMakerWorksUpdate: telemetry.lastSourceUpdatedAt
+        ? telemetry.lastSourceUpdatedAt.toISOString()
+        : null,
+      lastSyncAt: telemetry.lastSuccessfulSyncAt ? telemetry.lastSuccessfulSyncAt.toISOString() : null,
     },
     appUptimeSeconds: Math.round(process.uptime()),
   };
@@ -62,14 +44,12 @@ export async function GET() {
         lastJobReceivedAt: null,
         thresholdMinutes: CONNECTED_THRESHOLD_MINUTES,
         error: message,
-        events: {
-          total: 0,
-          received: 0,
-          processed: 0,
-          failed: 0,
-          lastEventAt: null,
+        jobs: {
+          orderworksTotal: 0,
+          makerworksTotal: 0,
+          lastMakerWorksUpdate: null,
+          lastSyncAt: null,
         },
-        jobs: { total: 0 },
         appUptimeSeconds: Math.round(process.uptime()),
       },
       { status: 500 },

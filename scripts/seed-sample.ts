@@ -59,6 +59,7 @@ const sampleJob = {
     userId: "user_sample_001",
     customerEmail: "info@makerworks.app",
     makerworksCreatedAt: new Date("2025-01-01T12:00:00Z"),
+    makerworksUpdatedAt: new Date("2025-01-01T12:00:00Z"),
     status: JobStatus.PENDING,
     paymentMethod: "card",
     paymentStatus: "paid",

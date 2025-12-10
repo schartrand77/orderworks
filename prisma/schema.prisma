@@ -22,12 +22,6 @@ enum FulfillmentStatus {
   PICKED_UP @map("picked_up")
 }
 
-enum WebhookEventStatus {
-  RECEIVED  @map("received")
-  PROCESSED @map("processed")
-  FAILED    @map("failed")
-}
-
 model Job {
   id               String     @id
   paymentIntentId  String     @unique
@@ -39,6 +33,7 @@ model Job {
   userId           String?
   customerEmail    String?
   makerworksCreatedAt DateTime @map("makerworks_created_at")
+  makerworksUpdatedAt DateTime @map("makerworks_updated_at")
   status           JobStatus  @default(PENDING)
   notes            String?
   paymentMethod    String?    @map("payment_method")
@@ -49,29 +44,8 @@ model Job {
   createdAt        DateTime   @default(now())
   updatedAt        DateTime   @updatedAt
 
-  events           MakerWorksWebhookEvent[]
-
   @@map("jobs")
   @@index([status])
   @@index([makerworksCreatedAt])
   @@index([queuePosition])
-}
-
-model MakerWorksWebhookEvent {
-  id              String             @id @default(cuid())
-  jobId           String?            @map("job_id")
-  paymentIntentId String?            @map("payment_intent_id")
-  signature       String?
-  payload         Json
-  headers         Json?
-  status          WebhookEventStatus @default(RECEIVED)
-  error           String?
-  processedAt     DateTime?          @map("processed_at")
-  createdAt       DateTime           @default(now()) @map("created_at")
-
-  job             Job?               @relation(fields: [jobId], references: [id], onDelete: SetNull)
-
-  @@map("makerworks_webhook_events")
-  @@index([jobId])
-  @@index([status])
 }

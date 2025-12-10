@@ -15,7 +15,6 @@ Create a `.env` file (or set environment variables in your deployment platform) 
 ```env
 DATABASE_URL="postgresql://postgres:postgres@localhost:5432/makerworks?schema=orderworks"
 DOCKER_DATABASE_URL="postgresql://postgres:postgres@db:5432/makerworks?schema=orderworks"
-MAKERWORKS_WEBHOOK_SECRET="super-secret-token"
 ADMIN_USERNAME="admin@example.com"
 ADMIN_PASSWORD="change-me"
 ADMIN_SESSION_SECRET="long-random-secret"
@@ -31,7 +30,7 @@ SMTP_PASSWORD="smtp-password"
 SMTP_SECURE="false"
 ```
 
-The same `MAKERWORKS_WEBHOOK_SECRET` must be configured in MakerWorks when registering the webhook. Provide `RECEIPT_FROM_EMAIL` plus either `RESEND_API_KEY` or the SMTP variables to enable receipt emails whenever a job is marked as completed. Leave `RESEND_API_KEY` blank if you plan to send mail only via SMTP. Set `RECEIPT_REPLY_TO_EMAIL` if replies should route to a different mailbox (e.g., `info@makerworks.app`). 
+OrderWorks now reads jobs directly from the MakerWorks Postgres database and keeps its own copy of each job (plus queue metadata) inside the `orderworks` schema. No webhook is required anymore—just point `DATABASE_URL` and `DOCKER_DATABASE_URL` at the MakerWorks instance. Provide `RECEIPT_FROM_EMAIL` plus either `RESEND_API_KEY` or the SMTP variables to enable receipt emails whenever a job is marked as completed. Leave `RESEND_API_KEY` blank if you plan to send mail only via SMTP. Set `RECEIPT_REPLY_TO_EMAIL` if replies should route to a different mailbox (e.g., `info@makerworks.app`). 
 
 `DATABASE_URL` points the Next.js dev server at Postgres listening on `localhost:5432`. Running `docker compose up` now starts a bundled Postgres container that exposes this port (and automatically creates the `orderworks` schema via `docker/postgres-init/01-orderworks-schema.sql`), so the default connection string works out of the box. `DOCKER_DATABASE_URL` is only used by `docker-compose.yml`; it defaults to the Compose `db` service but you can override it if you need the dev container to talk to the real MakerWorks database on your network. `ADMIN_USERNAME` and `ADMIN_PASSWORD` gate access to the dashboard and admin-only API routes. `ADMIN_SESSION_SECRET` signs the session cookie; change it any time you need to invalidate existing logins.
 
@@ -92,7 +91,7 @@ This starts two services:
 
 The default experience is fully self-contained: `app` talks to the `db` service via `DOCKER_DATABASE_URL`, and your local tools point at the same Postgres instance with `DATABASE_URL`. If you want the dev container to use the real MakerWorks database instead, override `DOCKER_DATABASE_URL` in `.env` to point at that server (you can also keep the bundled Postgres running locally for non-container dev). When targeting an external MakerWorks instance, ensure the `orderworks` schema exists once with `CREATE SCHEMA IF NOT EXISTS orderworks;` so Prisma can migrate without colliding with MakerWorks enums/tables.
 
-Environment variables (e.g., `MAKERWORKS_WEBHOOK_SECRET`, default `dev-secret`) live inside `.env` and `docker-compose.yml`; tweak them there if needed. Stop the stack with:
+Environment variables live inside `.env` and `docker-compose.yml`; tweak them there if needed. Stop the stack with:
 
 ```bash
 docker compose down
@@ -123,7 +122,6 @@ docker run -d \
   --name orderworks \
   -p 3000:3000 \
   -e DATABASE_URL="postgresql://USER:PASSWORD@HOST:PORT/makerworks?schema=orderworks" \
-  -e MAKERWORKS_WEBHOOK_SECRET="super-secret-token" \
   orderworks:latest
 ```
 
@@ -131,30 +129,17 @@ Configure additional email-related variables if you want completion receipts sen
 
 ### Unraid Community Applications template
 
-An Unraid CA template lives at [`unraid/orderworks.xml`](unraid/orderworks.xml). Add this repository as a template source inside Unraid (**Apps > menu > Manage Template Repositories > Add `https://github.com/schartrand77/orderworks`**) and the OrderWorks template will appear in the Apps tab. Fill in the `DATABASE_URL`, `MAKERWORKS_WEBHOOK_SECRET`, and any optional email variables when creating the container.
+An Unraid CA template lives at [`unraid/orderworks.xml`](unraid/orderworks.xml). Add this repository as a template source inside Unraid (**Apps > menu > Manage Template Repositories > Add `https://github.com/schartrand77/orderworks`**) and the OrderWorks template will appear in the Apps tab. Fill in the `DATABASE_URL` and any optional email variables when creating the container.
 
 The template defaults to pulling `ghcr.io/schartrand77/orderworks:latest`; update the repository tag if you publish the image elsewhere. Detailed Unraid setup notes (building/pushing the image, Postgres pairing, variable descriptions, etc.) live in [`docs/unraid.md`](docs/unraid.md).
 
+## MakerWorks database synchronization
+
+OrderWorks connects to the exact same Postgres instance that powers MakerWorks. MakerWorks stores its jobs in the `public.jobs` table; OrderWorks keeps its own working copy (with queue / fulfillment metadata) inside the `orderworks.jobs` table. On every startup and any time an admin hits the dashboard or job APIs, OrderWorks compares the latest `public.jobs.updatedAt` timestamp with what it has already synced. New or modified MakerWorks rows are copied over automatically—no webhook or additional HTTP access is necessary. Older MakerWorks installs only need to ensure the Postgres role used by OrderWorks can `SELECT` from `public.jobs`.
+
+OrderWorks never mutates the MakerWorks tables. Queue position, fulfillment status, payment annotations, and notes all live exclusively in the `orderworks` schema. MakerWorks remains responsible for creating jobs; OrderWorks reads them as soon as they appear in the database.
+
 ## API reference
-
-### POST `/api/makerworks/jobs`
-
-Ingests MakerWorks job payloads. Requests must include both `Authorization: Bearer <MAKERWORKS_WEBHOOK_SECRET>` and `X-MakerWorks-Signature: sha256=<HMAC>` where the HMAC value is the SHA-256 digest of the exact JSON body using the shared secret as the key.
-
-Payload fields accepted:
-
-- `id` (string, MakerWorks job id)
-- `paymentIntentId` (string)
-- `totalCents` (number or numeric string)
-- `currency` (string ISO currency code)
-- `lineItems` (array of objects: `{ description, quantity, unitPriceCents, ... }`)
-- `shipping` (object, optional)
-- `metadata` (object, optional)
-- `userId` (string, optional)
-- `customerEmail` (string email, optional)
-- `createdAt` (ISO timestamp)
-
-The endpoint creates or updates the stored job record and returns the persisted job JSON.
 
 ### GET `/api/jobs`
 
@@ -187,11 +172,11 @@ Permanently deletes the specified job and compacts the remaining queue positions
 
 ### GET `/api/makerworks/status`
 
-Returns the most recent MakerWorks ingestion timestamp plus a `connected`/`waiting`/`stale` indicator. This powers the dashboard badge.
+For administrators only. Returns the most recent MakerWorks job timestamp plus a `connected`/`waiting`/`stale` indicator. The endpoint triggers a background sync from `public.jobs` before responding so the status always reflects the source database. This powers the dashboard badge.
 
 ### GET `/api/makerworks/health`
 
-Provides a superset of the status payload that also includes webhook event counters, last event time, and total jobs stored. Use this for external health checks or uptime monitors.
+Provides a superset of the status payload that includes OrderWorks job totals, the last MakerWorks `updatedAt` timestamp observed, and the latest successful sync time. Use this for external health checks or uptime monitors.
 
 ### HEAD `/api/makerworks/health`
 
@@ -214,17 +199,7 @@ Visit `/login` to authenticate with the configured admin credentials. Sessions l
 
 ## MakerWorks configuration
 
-Configure the MakerWorks webhook to point at your deployment:
-
-- `ORDERWORKS_WEBHOOK_URL` - `https://orderworks.example.com/api/makerworks/jobs`
-- `ORDERWORKS_WEBHOOK_SECRET` - value matching `MAKERWORKS_WEBHOOK_SECRET`
-
-MakerWorks must send both the Bearer token and HMAC signature headers:
-
-1. `Authorization: Bearer <MAKERWORKS_WEBHOOK_SECRET>`
-2. `X-MakerWorks-Signature: sha256(HMAC(secret, raw_body))`
-
-OrderWorks validates both headers before storing or updating jobs.
+Because OrderWorks now syncs directly from the MakerWorks database, the only MakerWorks-side change required is granting the OrderWorks Postgres user read access to `public.jobs`. (The default `postgres` superuser already has this.) Remove any previously configured MakerWorks webhooks that pointed at OrderWorks—new jobs will appear automatically as soon as they are saved inside MakerWorks.
 
 
 
