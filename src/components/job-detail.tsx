@@ -153,7 +153,9 @@ export function JobDetail({ job }: Props) {
             ))}
           </div>
           <p className="mt-2 text-xs text-zinc-500">
-            Bambu Studio opens with the selected STL/3MF. Approve any connection prompt in the slicer if one appears.
+            Bambu Studio opens on the computer you're using right now (the link is handled by your browser via{" "}
+            <code className="mx-1 rounded bg-black/40 px-1 py-0.5 text-[0.6rem] text-white">bambu-studio://</code>). No
+            tooling runs inside the OrderWorks container—approve any connection prompt that appears in your local slicer.
           </p>
         </div>
       ) : null}
