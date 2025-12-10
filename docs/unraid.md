@@ -27,7 +27,7 @@ Skip the push step if you plan to build directly on the Unraid host and use a `l
 
 When adding the container, fill in the template inputs:
 
-- **Database URL** - PostgreSQL connection string from inside the container. If you deploy the official Postgres template and name it `orderworks-db`, a typical string is `postgresql://orderworks:orderworks@orderworks-db:5432/orderworks?schema=public`.
+- **Database URL** - PostgreSQL connection string from inside the container. Point it at the MakerWorks database but keep OrderWorks in its own schema, e.g. `postgresql://postgres:postgres@makerworks-db:5432/makerworks?schema=orderworks`.
 - **MakerWorks Webhook Secret** - Must match the secret you configure in MakerWorks and is used for both the Bearer token and the `X-MakerWorks-Signature` HMAC header.
 - **Admin login** - Set `ADMIN_USERNAME`, `ADMIN_PASSWORD`, and `ADMIN_SESSION_SECRET` to secure the dashboard. Rotating the secret immediately revokes existing sessions.
 - **Web UI Port** - Defaults to `3000`. Map it to any host port you prefer.

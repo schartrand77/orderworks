@@ -13,8 +13,8 @@ OrderWorks ingests MakerWorks fabrication job forms, persists them in Postgres, 
 Create a `.env` file (or set environment variables in your deployment platform) with:
 
 ```env
-DATABASE_URL="postgresql://postgres:postgres@localhost:5432/makerworks?schema=public"
-DOCKER_DATABASE_URL="postgresql://postgres:postgres@host.docker.internal:5432/makerworks?schema=public"
+DATABASE_URL="postgresql://postgres:postgres@localhost:5432/makerworks?schema=orderworks"
+DOCKER_DATABASE_URL="postgresql://postgres:postgres@host.docker.internal:5432/makerworks?schema=orderworks"
 MAKERWORKS_WEBHOOK_SECRET="super-secret-token"
 ADMIN_USERNAME="admin@example.com"
 ADMIN_PASSWORD="change-me"
@@ -33,7 +33,7 @@ SMTP_SECURE="false"
 
 The same `MAKERWORKS_WEBHOOK_SECRET` must be configured in MakerWorks when registering the webhook. Provide `RECEIPT_FROM_EMAIL` plus either `RESEND_API_KEY` or the SMTP variables to enable receipt emails whenever a job is marked as completed. Leave `RESEND_API_KEY` blank if you plan to send mail only via SMTP. Set `RECEIPT_REPLY_TO_EMAIL` if replies should route to a different mailbox (e.g., `info@makerworks.app`). 
 
-`DATABASE_URL` points the Next.js dev server at the MakerWorks v2 Postgres instance (the default MakerWorks compose stack exposes Postgres on `localhost:5432`). `DOCKER_DATABASE_URL` is only used by `docker-compose.yml` so the Node container can reach that same database through `host.docker.internal`; override it if your MakerWorks database lives elsewhere. `ADMIN_USERNAME` and `ADMIN_PASSWORD` gate access to the dashboard and admin-only API routes. `ADMIN_SESSION_SECRET` signs the session cookie; change it any time you need to invalidate existing logins.
+`DATABASE_URL` points the Next.js dev server at the MakerWorks v2 Postgres instance (the default MakerWorks compose stack exposes Postgres on `localhost:5432`). OrderWorks uses its own Postgres schema (`orderworks`) so it can coexist alongside MakerWorks tables inside the same database—create the schema once with `CREATE SCHEMA IF NOT EXISTS orderworks;` before applying migrations. `DOCKER_DATABASE_URL` is only used by `docker-compose.yml` so the Node container can reach that same database through `host.docker.internal`; override it if your MakerWorks database lives elsewhere. `ADMIN_USERNAME` and `ADMIN_PASSWORD` gate access to the dashboard and admin-only API routes. `ADMIN_SESSION_SECRET` signs the session cookie; change it any time you need to invalidate existing logins.
 
 ## Install dependencies
 
@@ -52,7 +52,7 @@ npm run db:generate
 Apply migrations to your database:
 
 ```bash
-DATABASE_URL="postgresql://postgres:postgres@localhost:5432/makerworks?schema=public" npm run db:migrate
+DATABASE_URL="postgresql://postgres:postgres@localhost:5432/makerworks?schema=orderworks" npm run db:migrate
 ```
 
 The project ships with an initial migration (`prisma/migrations`) that creates the `jobs` table and associated enum.
@@ -89,7 +89,7 @@ This starts one service:
 
 - `app` - `node:20` container running `npm run dev` with your working tree bind-mounted for hot reloads. It automatically runs `npm install`, `npm run db:generate`, and `npm run db:migrate` before the dev server launches, so the schema is applied. The server listens on port `3000` in the container and is exposed at [http://localhost:3001](http://localhost:3001).
 
-Make sure the MakerWorks v2 stack (or another Postgres instance that contains the MakerWorks data) is already running and exposing Postgres on `localhost:5432`. OrderWorks uses `DOCKER_DATABASE_URL` plus an `extra_hosts` entry to resolve `host.docker.internal` inside the container so it can connect to that database. Override `DOCKER_DATABASE_URL` in `.env` if your shared Postgres host, port, credentials, or database name differ.
+Make sure the MakerWorks v2 stack (or another Postgres instance that contains the MakerWorks data) is already running and exposing Postgres on `localhost:5432`. OrderWorks uses `DOCKER_DATABASE_URL` plus an `extra_hosts` entry to resolve `host.docker.internal` inside the container so it can connect to that database. Override `DOCKER_DATABASE_URL` in `.env` if your shared Postgres host, port, credentials, or database name differ. The first time you point at a MakerWorks database, create the dedicated schema with `psql -h localhost -p 5432 -U postgres -d makerworks -c "CREATE SCHEMA IF NOT EXISTS orderworks;"` (or the equivalent command for your environment) so Prisma can migrate without colliding with MakerWorks enums/tables.
 
 Environment variables (e.g., `MAKERWORKS_WEBHOOK_SECRET`, default `dev-secret`) live inside `.env` and `docker-compose.yml`; tweak them there if needed. Stop the stack with:
 
@@ -111,7 +111,7 @@ docker build -t orderworks:latest .
 
 ```bash
 docker run --rm \
-  -e DATABASE_URL="postgresql://USER:PASSWORD@HOST:PORT/orderworks?schema=public" \
+  -e DATABASE_URL="postgresql://USER:PASSWORD@HOST:PORT/makerworks?schema=orderworks" \
   orderworks:latest npm run db:migrate
 ```
 
@@ -121,7 +121,7 @@ docker run --rm \
 docker run -d \
   --name orderworks \
   -p 3000:3000 \
-  -e DATABASE_URL="postgresql://USER:PASSWORD@HOST:PORT/orderworks?schema=public" \
+  -e DATABASE_URL="postgresql://USER:PASSWORD@HOST:PORT/makerworks?schema=orderworks" \
   -e MAKERWORKS_WEBHOOK_SECRET="super-secret-token" \
   orderworks:latest
 ```

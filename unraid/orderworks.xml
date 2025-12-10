@@ -17,7 +17,7 @@ Deploy this container alongside a PostgreSQL database. Supply the DATABASE_URL c
   <TemplateURL>https://raw.githubusercontent.com/schartrand77/orderworks/main/unraid/orderworks.xml</TemplateURL>
   <Icon>https://raw.githubusercontent.com/schartrand77/orderworks/main/public/globe.svg</Icon>
   <Config Name="Web UI Port" Target="3000" Default="3000" Mode="tcp" Description="Container port exposed by the Next.js server" Type="Port" Display="always" Required="true" Mask="false" />
-  <Config Name="Database URL" Target="DATABASE_URL" Default="" Description="Full PostgreSQL connection string (ex: postgresql://user:pass@host:5432/orderworks?schema=public)" Type="Variable" Display="always" Required="true" Mask="true" />
+  <Config Name="Database URL" Target="DATABASE_URL" Default="" Description="Full PostgreSQL connection string (ex: postgresql://user:pass@host:5432/makerworks?schema=orderworks)" Type="Variable" Display="always" Required="true" Mask="true" />
   <Config Name="MakerWorks Webhook Secret" Target="MAKERWORKS_WEBHOOK_SECRET" Default="" Description="Shared secret MakerWorks uses when POSTing jobs" Type="Variable" Display="always" Required="true" Mask="true" />
   <Config Name="Admin Username" Target="ADMIN_USERNAME" Default="" Description="Username required to log into the admin dashboard" Type="Variable" Display="always" Required="true" Mask="false" />
   <Config Name="Admin Password" Target="ADMIN_PASSWORD" Default="" Description="Password required to log into the admin dashboard" Type="Variable" Display="always" Required="true" Mask="true" />

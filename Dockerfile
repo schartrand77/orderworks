@@ -13,7 +13,7 @@ WORKDIR /app
 ENV NEXT_TELEMETRY_DISABLED=1
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-ARG DATABASE_URL="postgresql://placeholder:placeholder@localhost:5432/orderworks?schema=public"
+ARG DATABASE_URL="postgresql://placeholder:placeholder@localhost:5432/makerworks?schema=orderworks"
 ENV DATABASE_URL=${DATABASE_URL}
 RUN npm run db:generate
 RUN npm run build
