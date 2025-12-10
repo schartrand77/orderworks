@@ -26,7 +26,7 @@ let lastSyncStart = 0;
 let lastSuccessfulSyncAt: Date | null = null;
 let lastMakerWorksSourceUpdatedAt: Date | null = null;
 
-async function makerWorksJobsTableExists() {
+export async function makerWorksJobsTableExists() {
   const [result] = await prisma.$queryRaw<{ exists: boolean }[]>(
     Prisma.sql`
       SELECT EXISTS (

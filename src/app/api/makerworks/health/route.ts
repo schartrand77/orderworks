@@ -2,20 +2,32 @@ import { NextResponse } from "next/server";
 import { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { fetchMakerWorksStatus, CONNECTED_THRESHOLD_MINUTES } from "@/lib/makerworks-status";
-import { getMakerWorksSyncTelemetry, syncMakerWorksJobs } from "@/lib/makerworks-sync";
+import {
+  getMakerWorksSyncTelemetry,
+  makerWorksJobsTableExists,
+  syncMakerWorksJobs,
+} from "@/lib/makerworks-sync";
 import type { MakerWorksHealthPayload } from "@/types/makerworks-status";
 
 export const dynamic = "force-dynamic";
 
 async function gatherHealthPayload(): Promise<MakerWorksHealthPayload> {
   await syncMakerWorksJobs();
-  const [statusPayload, orderworksTotal, makerworksTotalResult] = await Promise.all([
+  const [statusPayload, orderworksTotal, makerworksTotal] = await Promise.all([
     fetchMakerWorksStatus(),
     prisma.job.count(),
-    prisma.$queryRaw<{ total: number }[]>(Prisma.sql`SELECT COUNT(*)::int AS total FROM public."jobs"`),
+    (async () => {
+      const exists = await makerWorksJobsTableExists();
+      if (!exists) {
+        return 0;
+      }
+      const result = await prisma.$queryRaw<{ total: number }[]>(
+        Prisma.sql`SELECT COUNT(*)::int AS total FROM public."jobs"`,
+      );
+      return result[0]?.total ?? 0;
+    })(),
   ]);
   const telemetry = getMakerWorksSyncTelemetry();
-  const makerworksTotal = makerworksTotalResult[0]?.total ?? 0;
 
   return {
     ...statusPayload,
