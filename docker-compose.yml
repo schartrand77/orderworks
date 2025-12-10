@@ -1,11 +1,32 @@
 services:
+  db:
+    image: postgres:15-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: makerworks
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./docker/postgres-init:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d makerworks"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
   app:
     image: node:20-bookworm
     working_dir: /app
+    depends_on:
+      db:
+        condition: service_healthy
     env_file:
       - .env
     environment:
-      DATABASE_URL: ${DOCKER_DATABASE_URL:-postgresql://postgres:postgres@host.docker.internal:5432/makerworks?schema=orderworks}
+      DATABASE_URL: ${DOCKER_DATABASE_URL:-postgresql://postgres:postgres@db:5432/makerworks?schema=orderworks}
       MAKERWORKS_WEBHOOK_SECRET: ${MAKERWORKS_WEBHOOK_SECRET:-dev-secret}
       ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-dev-password}
@@ -27,3 +48,4 @@ services:
 
 volumes:
   app-node_modules:
+  postgres-data:
