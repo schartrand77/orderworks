@@ -122,13 +122,13 @@ async function performSync() {
 
   for (const row of rows) {
     const normalizeString = (value: string | null) => (value && value.trim().length > 0 ? value : null);
-    const sharedData = {
+    const sharedData: Prisma.JobUpdateInput = {
       paymentIntentId: row.paymentIntentId,
       totalCents: row.totalCents,
       currency: row.currency,
-      lineItems: row.lineItems,
-      shipping: row.shipping,
-      metadata: row.metadata,
+      lineItems: row.lineItems as Prisma.InputJsonValue,
+      shipping: row.shipping === null ? Prisma.JsonNull : (row.shipping as Prisma.InputJsonValue),
+      metadata: row.metadata === null ? Prisma.JsonNull : (row.metadata as Prisma.InputJsonValue),
       userId: normalizeString(row.userId),
       customerEmail: normalizeString(row.customerEmail),
       makerworksCreatedAt: row.makerworksCreatedAt,
@@ -146,7 +146,16 @@ async function performSync() {
       await prisma.job.create({
         data: {
           id: row.id,
-          ...sharedData,
+          paymentIntentId: row.paymentIntentId,
+          totalCents: row.totalCents,
+          currency: row.currency,
+          lineItems: row.lineItems as Prisma.InputJsonValue,
+          shipping: row.shipping === null ? Prisma.JsonNull : (row.shipping as Prisma.InputJsonValue),
+          metadata: row.metadata === null ? Prisma.JsonNull : (row.metadata as Prisma.InputJsonValue),
+          userId: normalizeString(row.userId),
+          customerEmail: normalizeString(row.customerEmail),
+          makerworksCreatedAt: row.makerworksCreatedAt,
+          makerworksUpdatedAt: row.updatedAt,
           queuePosition,
           status: normalizeJobStatus(row.status),
           notes: row.notes ?? null,

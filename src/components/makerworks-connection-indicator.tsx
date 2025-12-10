@@ -37,7 +37,7 @@ const STATUS_META: Record<DisplayStatus, StatusMeta> = {
   },
   loading: {
     label: "Checking MakerWorks connection",
-    description: "Fetching current status…",
+    description: "Fetching current status...",
     dotClass: "bg-zinc-600 animate-pulse",
   },
 };
@@ -140,6 +140,7 @@ function formatRelativeTime(timestamp: string) {
   const diffDays = Math.floor(diffHours / 24);
   return `${diffDays}d ago`;
 }
+
 
 
 
