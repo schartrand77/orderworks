@@ -26,6 +26,19 @@ let lastSyncStart = 0;
 let lastSuccessfulSyncAt: Date | null = null;
 let lastMakerWorksSourceUpdatedAt: Date | null = null;
 
+async function makerWorksJobsTableExists() {
+  const [result] = await prisma.$queryRaw<{ exists: boolean }[]>(
+    Prisma.sql`
+      SELECT EXISTS (
+        SELECT 1
+        FROM information_schema.tables
+        WHERE table_schema = 'public' AND table_name = 'jobs'
+      ) AS "exists"
+    `,
+  );
+  return result?.exists ?? false;
+}
+
 function normalizeJobStatus(value: string | null): JobStatus {
   switch (value) {
     case JobStatus.PRINTING:
@@ -70,6 +83,13 @@ async function fetchMakerWorksRows(since?: Date | null) {
 }
 
 async function performSync() {
+  const jobTableExists = await makerWorksJobsTableExists();
+  if (!jobTableExists) {
+    lastMakerWorksSourceUpdatedAt = null;
+    lastSuccessfulSyncAt = new Date();
+    return 0;
+  }
+
   const [{ sourceLatest }] = await prisma.$queryRaw<{ sourceLatest: Date | null }[]>(
     Prisma.sql`SELECT MAX("updatedAt") AS "sourceLatest" FROM public."jobs"`,
   );
