@@ -1,9 +1,10 @@
 import Link from "next/link";
 import type { Job } from "@/generated/prisma/client";
-import { formatCurrency, formatDate, STATUS_LABELS } from "@/lib/format";
+import { formatCurrency, formatDate } from "@/lib/format";
 import { deriveApproximatePrintTime } from "@/lib/print-time";
 import { JobQueueControls } from "@/components/job-queue-controls";
 import { SampleJobTestEmailButton } from "@/components/sample-job-test-email-button";
+import { JobStatusQuickAction } from "@/components/job-status-quick-action";
 
 const SAMPLE_JOB_ID = "makerworks-sample-job";
 
@@ -28,10 +29,9 @@ export function JobTable({ jobs }: Props) {
             <th className="px-4 py-3 font-medium">Queue</th>
             <th className="px-4 py-3 font-medium">MakerWorks ID</th>
             <th className="px-4 py-3 font-medium">Payment Intent</th>
-            <th className="px-4 py-3 font-medium">Status</th>
             <th className="px-4 py-3 font-medium">Total</th>
             <th className="px-4 py-3 font-medium">Created</th>
-            <th className="px-4 py-3" />
+            <th className="px-4 py-3 font-medium text-right">Actions</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-white/5">
@@ -65,11 +65,6 @@ export function JobTable({ jobs }: Props) {
               <td className="px-4 py-4 font-mono text-xs text-zinc-400">
                 {job.paymentIntentId}
               </td>
-              <td className="px-4 py-4">
-                <span className="inline-flex items-center rounded-full border border-white/15 bg-white/5 px-3 py-1 text-xs font-semibold text-zinc-200">
-                  {STATUS_LABELS[job.status]}
-                </span>
-              </td>
               <td className="px-4 py-4 text-white">
                 {formatCurrency(job.totalCents, job.currency)}
               </td>
@@ -77,7 +72,7 @@ export function JobTable({ jobs }: Props) {
                 {formatDate(job.makerworksCreatedAt)}
               </td>
               <td className="px-4 py-4 text-right">
-                <div className="flex flex-col items-end gap-2">
+                <div className="flex flex-col items-end gap-3">
                   {job.id === SAMPLE_JOB_ID && job.customerEmail ? (
                     <SampleJobTestEmailButton recipient={job.customerEmail} />
                   ) : null}
@@ -87,6 +82,11 @@ export function JobTable({ jobs }: Props) {
                   >
                     View
                   </Link>
+                  <JobStatusQuickAction
+                    paymentIntentId={job.paymentIntentId}
+                    initialStatus={job.status}
+                    className="w-full max-w-[180px]"
+                  />
                 </div>
               </td>
               </tr>

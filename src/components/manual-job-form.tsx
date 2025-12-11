@@ -100,10 +100,14 @@ function normalizeLineItems(inputs: LineItemInput[]) {
   return normalized;
 }
 
-export function ManualJobForm() {
+interface ManualJobFormProps {
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+export function ManualJobForm({ isOpen, onClose }: ManualJobFormProps) {
   const router = useRouter();
   const { notify } = useNotifications();
-  const [isExpanded, setIsExpanded] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [jobId, setJobId] = useState("");
@@ -224,6 +228,7 @@ export function ManualJobForm() {
       notify({ type: "success", message: `Job ${body.job?.id ?? normalizedJobId} created.` });
       resetForm();
       router.refresh();
+      onClose();
     } catch (cause) {
       const message = cause instanceof Error ? cause.message : "Unexpected error";
       setError(message);
@@ -233,24 +238,28 @@ export function ManualJobForm() {
     }
   }
 
+  if (!isOpen) {
+    return null;
+  }
+
   return (
-    <section className="rounded-2xl border border-white/10 bg-white/5 p-6 shadow-[0_20px_60px_rgba(0,0,0,0.45)]">
-      <div className="flex flex-col gap-3 border-b border-white/10 pb-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="space-y-1">
-          <h2 className="text-lg font-semibold text-white">Manually enter a job</h2>
-          <p className="text-sm text-zinc-400">
-            Record out-of-band fabrication work by hand. Provide at least one line item and a payment intent id.
-          </p>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4">
+      <div className="relative max-h-[95vh] w-full max-w-5xl overflow-y-auto rounded-2xl border border-white/10 bg-[#090909] p-6 shadow-[0_40px_120px_rgba(0,0,0,0.75)]">
+        <div className="flex flex-col gap-3 border-b border-white/10 pb-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="space-y-1">
+            <h2 className="text-lg font-semibold text-white">Manually enter a job</h2>
+            <p className="text-sm text-zinc-400">
+              Record out-of-band fabrication work by hand. Provide at least one line item and a payment intent id.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="self-start rounded-md border border-white/10 bg-white/10 px-3 py-1.5 text-sm font-semibold text-white transition hover:border-white/40 hover:bg-white/20"
+          >
+            Close
+          </button>
         </div>
-        <button
-          type="button"
-          onClick={() => setIsExpanded((value) => !value)}
-          className="self-start rounded-md border border-white/10 bg-white/10 px-3 py-1.5 text-sm font-semibold text-white transition hover:border-white/40 hover:bg-white/20"
-        >
-          {isExpanded ? "Hide form" : "Add manual job"}
-        </button>
-      </div>
-      {isExpanded ? (
         <form className="mt-6 space-y-6" onSubmit={handleSubmit}>
           <div className="grid gap-4 md:grid-cols-2">
             <div>
@@ -563,12 +572,7 @@ export function ManualJobForm() {
             <p className="text-xs text-zinc-400">Jobs are appended to the end of the queue with a pending status.</p>
           </div>
         </form>
-      ) : (
-        <p className="mt-4 text-sm text-zinc-400">
-          Click &ldquo;Add manual job&rdquo; to open the form whenever a fabrication request wasn&apos;t sent from
-          MakerWorks.
-        </p>
-      )}
-    </section>
+      </div>
+    </div>
   );
 }

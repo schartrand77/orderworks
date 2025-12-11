@@ -6,7 +6,6 @@ import { syncMakerWorksJobs } from "@/lib/makerworks-sync";
 import { JobFilters } from "@/components/job-filters";
 import { JobTable } from "@/components/job-table";
 import { MakerWorksConnectionIndicator } from "@/components/makerworks-connection-indicator";
-import { ManualJobForm } from "@/components/manual-job-form";
 
 export const dynamic = "force-dynamic";
 
@@ -109,7 +108,6 @@ export default function Page({ searchParams }: { searchParams?: Promise<SearchPa
           <MakerWorksConnectionIndicator />
         </div>
       </div>
-      <ManualJobForm />
       <Suspense
         fallback={
           <div className="rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-sm text-zinc-200">

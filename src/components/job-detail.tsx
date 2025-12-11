@@ -1,9 +1,10 @@
 import Image from "next/image";
 import type { Job } from "@/generated/prisma/client";
 import { FulfillmentStatus as FulfillmentStatusEnum } from "@/generated/prisma/enums";
-import { formatCurrency, formatDate, STATUS_LABELS, FULFILLMENT_STATUS_LABELS } from "@/lib/format";
+import { formatCurrency, formatDate, FULFILLMENT_STATUS_LABELS } from "@/lib/format";
 import { deriveApproximatePrintTime } from "@/lib/print-time";
 import { buildBambuStudioLink, extractModelFiles } from "@/lib/model-files";
+import { JobStatusBadge } from "@/components/job-status-badge";
 
 interface Props {
   job: Job;
@@ -44,9 +45,7 @@ export function JobDetail({ job }: Props) {
           <h2 className="text-lg font-semibold text-white">Job summary</h2>
           <p className="text-sm text-zinc-400">{job.id}</p>
         </div>
-        <span className="inline-flex items-center rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-semibold text-zinc-100">
-          {STATUS_LABELS[job.status]}
-        </span>
+        <JobStatusBadge status={job.status} />
       </header>
       <dl className="grid gap-4 text-sm text-zinc-200 sm:grid-cols-2">
         <div>
