@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { NotificationsProvider } from "@/components/notifications-provider";
+import { ServiceWorkerRegister } from "@/components/service-worker-register";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -17,6 +18,21 @@ export const metadata: Metadata = {
   title: "OrderWorks Admin",
   description: "Administer MakerWorks fabrication jobs and fulfillment.",
   manifest: "/manifest.webmanifest",
+  icons: {
+    icon: [
+      {
+        url: "/favicon.jpg",
+        sizes: "1536x1536",
+        type: "image/jpeg",
+      },
+    ],
+    apple: {
+      url: "/favicon.jpg",
+      sizes: "1536x1536",
+      type: "image/jpeg",
+    },
+    shortcut: "/favicon.jpg",
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
@@ -37,6 +53,7 @@ export default function RootLayout({
     <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable} bg-[#050505] text-white`}>
         <NotificationsProvider>{children}</NotificationsProvider>
+        <ServiceWorkerRegister />
       </body>
     </html>
   );
