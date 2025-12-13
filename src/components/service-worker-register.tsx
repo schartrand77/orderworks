@@ -8,22 +8,16 @@ export function ServiceWorkerRegister() {
       return;
     }
 
-    const register = () => {
-      navigator.serviceWorker.register("/sw.js").catch((error) => {
-        console.error("Service worker registration failed:", error);
-      });
-    };
-
-    if (document.readyState === "complete") {
-      register();
+    if (!window.isSecureContext) {
+      console.warn(
+        `[PWA] Service workers require a secure context. Open this app on https:// or http://localhost (current origin: ${window.location.origin}).`,
+      );
       return;
     }
 
-    window.addEventListener("load", register);
-
-    return () => {
-      window.removeEventListener("load", register);
-    };
+    navigator.serviceWorker.register("/sw.js").catch((error) => {
+      console.error("Service worker registration failed:", error);
+    });
   }, []);
 
   return null;
