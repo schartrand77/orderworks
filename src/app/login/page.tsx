@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { LoginForm } from "@/components/login-form";
+import { PwaInstallPrompt } from "@/components/pwa-install-prompt";
 import { readAdminSessionTokenFromHeaders, validateAdminSessionToken } from "@/lib/auth";
 
 interface SearchParams {
@@ -34,6 +35,7 @@ export default async function LoginPage({ searchParams }: { searchParams?: Promi
           <p className="text-sm text-zinc-400">Sign in with the admin credentials configured in your environment.</p>
         </div>
         <LoginForm returnTo={returnTo} />
+        <PwaInstallPrompt />
       </div>
     </main>
   );
