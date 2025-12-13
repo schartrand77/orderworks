@@ -50,5 +50,13 @@ Wait for the database container to start before launching OrderWorks.
 - Click **Apply** on the OrderWorks template.
 - Confirm logs show `Applying Prisma migrations...` followed by `ready - started server`. The UI becomes available at `http://UNRAID-IP:HOST_PORT`.
 
-To update, push a new image tag and click **Update** on the container or enable Unraid's auto-update plugin.
+### Install as a home screen app (PWA)
 
+Browsers only offer “Install app” when OrderWorks is served from a secure context:
+
+- `http://localhost` works, but `http://UNRAID-IP:HOST_PORT` will not be installable.
+- Put the container behind an HTTPS reverse proxy (Nginx Proxy Manager, Traefik, Caddy, etc.) and access it via `https://...`.
+
+If your proxy sets headers, ensure requests include `X-Forwarded-Proto: https` so login cookies are marked `Secure`.
+
+To update, push a new image tag and click **Update** on the container or enable Unraid's auto-update plugin.

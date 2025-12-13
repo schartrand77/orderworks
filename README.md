@@ -197,10 +197,18 @@ Navigate to the root path `/` to view the OrderWorks admin dashboard:
 
 Visit `/login` to authenticate with the configured admin credentials. Sessions last 12 hours by default; logging out or rotating `ADMIN_SESSION_SECRET` immediately revokes access.
 
+## PWA / Home screen install
+
+OrderWorks is installable as a home screen app (PWA) when served from a secure context:
+
+- Works on `http://localhost` during development.
+- Requires `https://` in production (opening `http://SERVER-IP:PORT` will not offer install in Chrome/Safari).
+
+If you are behind a reverse proxy/ingress, ensure it terminates TLS and forwards `X-Forwarded-Proto: https` so auth cookies are marked `Secure`.
+
 ## MakerWorks configuration
 
-Because OrderWorks now syncs directly from the MakerWorks database, the only MakerWorks-side change required is granting the OrderWorks Postgres user read access to `public.jobs`. (The default `postgres` superuser already has this.) Remove any previously configured MakerWorks webhooks that pointed at OrderWorks—new jobs will appear automatically as soon as they are saved inside MakerWorks.
-
+Because OrderWorks now syncs directly from the MakerWorks database, the only MakerWorks-side change required is granting the OrderWorks Postgres user read access to `public.jobs`. (The default `postgres` superuser already has this.) Remove any previously configured MakerWorks webhooks that pointed at OrderWorks-new jobs will appear automatically as soon as they are saved inside MakerWorks.
 
 
 
