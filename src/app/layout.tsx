@@ -21,17 +21,17 @@ export const metadata: Metadata = {
   icons: {
     icon: [
       {
-        url: "/favicon.jpg",
+        url: "/favicon.png",
         sizes: "1536x1536",
-        type: "image/jpeg",
+        type: "image/png",
       },
     ],
     apple: {
-      url: "/favicon.jpg",
+      url: "/favicon.png",
       sizes: "1536x1536",
-      type: "image/jpeg",
+      type: "image/png",
     },
-    shortcut: "/favicon.jpg",
+    shortcut: "/favicon.png",
   },
   appleWebApp: {
     capable: true,

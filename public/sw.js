@@ -1,5 +1,5 @@
 const CACHE_NAME = "orderworks-shell-v1";
-const CORE_ASSETS = ["/pwa", "/manifest.webmanifest", "/favicon.jpg", "/icons/icon-192.png", "/icons/icon-512.png"];
+const CORE_ASSETS = ["/pwa", "/manifest.webmanifest", "/favicon.png", "/icons/icon-192.png", "/icons/icon-512.png"];
 const STATIC_DESTINATIONS = new Set(["style", "script", "image", "font", "worker"]);
 const STATIC_PREFIXES = ["/_next/static/", "/icons/", "/favicon", "/apple-touch-icon"];
 const OFFLINE_FALLBACK = "/pwa";
