@@ -53,12 +53,14 @@ export const jobStatusUpdateSchema = z
     status: z.enum(jobStatusValues).optional(),
     notes: z.string().optional(),
     fulfillmentStatus: z.enum(fulfillmentStatusValues).optional(),
+    lineItems: z.array(lineItemSchema).min(1, "lineItems cannot be empty").optional(),
   })
   .refine(
     (value) =>
       value.status !== undefined ||
       value.notes !== undefined ||
-      value.fulfillmentStatus !== undefined,
+      value.fulfillmentStatus !== undefined ||
+      value.lineItems !== undefined,
     { message: "At least one field must be provided" },
   );
 
@@ -71,6 +73,7 @@ export function normalizeJobStatusUpdatePayload(payload: JobStatusUpdatePayload)
     notes: trimmedNotes === undefined ? undefined : trimmedNotes.length === 0 ? null : trimmedNotes,
     fulfillmentStatus:
       payload.fulfillmentStatus === undefined ? undefined : fulfillmentStatusMap[payload.fulfillmentStatus],
+    ...(payload.lineItems ? { lineItems: payload.lineItems } : {}),
   } as const;
 }
 

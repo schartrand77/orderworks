@@ -76,6 +76,7 @@ export async function PATCH(request: NextRequest, context: { params: Promise<Par
   const data: Prisma.JobUpdateInput = {
     ...(nextStatus !== undefined ? { status: nextStatus } : {}),
     ...(normalized.notes !== undefined ? { notes: normalized.notes } : {}),
+    ...(normalized.lineItems !== undefined ? { lineItems: normalized.lineItems } : {}),
   };
 
   if (normalized.fulfillmentStatus !== undefined) {
