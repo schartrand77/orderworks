@@ -1,5 +1,6 @@
 import { z } from "zod";
 import type { JobStatus, FulfillmentStatus } from "@/generated/prisma/enums";
+import type { Prisma } from "@/generated/prisma/client";
 import { JobStatus as JobStatusEnum, FulfillmentStatus as FulfillmentStatusEnum } from "@/generated/prisma/enums";
 
 const numeric = z
@@ -66,15 +67,22 @@ export const jobStatusUpdateSchema = z
 
 export type JobStatusUpdatePayload = z.infer<typeof jobStatusUpdateSchema>;
 
-export function normalizeJobStatusUpdatePayload(payload: JobStatusUpdatePayload) {
+export type JobStatusUpdateNormalized = {
+  status?: JobStatus;
+  notes?: string | null;
+  fulfillmentStatus?: FulfillmentStatus;
+  lineItems?: Prisma.InputJsonValue;
+};
+
+export function normalizeJobStatusUpdatePayload(payload: JobStatusUpdatePayload): JobStatusUpdateNormalized {
   const trimmedNotes = payload.notes?.trim();
   return {
     ...(payload.status ? { status: jobStatusMap[payload.status] } : {}),
     notes: trimmedNotes === undefined ? undefined : trimmedNotes.length === 0 ? null : trimmedNotes,
     fulfillmentStatus:
       payload.fulfillmentStatus === undefined ? undefined : fulfillmentStatusMap[payload.fulfillmentStatus],
-    ...(payload.lineItems ? { lineItems: payload.lineItems } : {}),
-  } as const;
+    ...(payload.lineItems ? { lineItems: payload.lineItems as Prisma.InputJsonValue } : {}),
+  };
 }
 
 export const manualJobSchema = z.object({
