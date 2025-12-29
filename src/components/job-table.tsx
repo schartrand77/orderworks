@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { Job } from "@/generated/prisma/client";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { deriveApproximatePrintTime } from "@/lib/print-time";
+import { getCustomerName, getPaymentMethodLabel } from "@/lib/job-display";
 import { JobQueueControls } from "@/components/job-queue-controls";
 import { SampleJobTestEmailButton } from "@/components/sample-job-test-email-button";
 import { JobStatusQuickAction } from "@/components/job-status-quick-action";
@@ -27,8 +28,8 @@ export function JobTable({ jobs }: Props) {
         <thead className="bg-white/5 text-xs uppercase tracking-[0.25em] text-zinc-400">
           <tr>
             <th className="px-4 py-3 font-medium">Queue</th>
-            <th className="px-4 py-3 font-medium">MakerWorks ID</th>
-            <th className="px-4 py-3 font-medium">Payment Intent</th>
+            <th className="px-4 py-3 font-medium">Customer</th>
+            <th className="px-4 py-3 font-medium">Payment</th>
             <th className="px-4 py-3 font-medium">Total</th>
             <th className="px-4 py-3 font-medium">Created</th>
             <th className="px-4 py-3 font-medium text-right">Actions</th>
@@ -51,7 +52,7 @@ export function JobTable({ jobs }: Props) {
               </td>
                 <td className="px-4 py-4 text-white">
                   <div className="flex flex-col gap-1">
-                    <span>{job.id}</span>
+                    <span>{getCustomerName(job) ?? "Unknown customer"}</span>
                     {printTime ? (
                       <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2 py-0.5 text-[0.65rem] font-semibold uppercase tracking-[0.15em] text-amber-200/90">
                         approx.
@@ -62,9 +63,7 @@ export function JobTable({ jobs }: Props) {
                     ) : null}
                   </div>
                 </td>
-              <td className="px-4 py-4 font-mono text-xs text-zinc-400">
-                {job.paymentIntentId}
-              </td>
+              <td className="px-4 py-4 text-zinc-200">{getPaymentMethodLabel(job)}</td>
               <td className="px-4 py-4 text-white">
                 {formatCurrency(job.totalCents, job.currency)}
               </td>

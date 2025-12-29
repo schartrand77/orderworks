@@ -4,6 +4,7 @@ import { FulfillmentStatus as FulfillmentStatusEnum } from "@/generated/prisma/e
 import { formatCurrency, formatDate, FULFILLMENT_STATUS_LABELS } from "@/lib/format";
 import { deriveApproximatePrintTime } from "@/lib/print-time";
 import { buildBambuStudioLink, extractModelFiles } from "@/lib/model-files";
+import { getCustomerName, getPaymentMethodLabel } from "@/lib/job-display";
 import { JobStatusBadge } from "@/components/job-status-badge";
 
 interface Props {
@@ -59,8 +60,8 @@ export function JobDetail({ job }: Props) {
           </div>
         ) : null}
         <div>
-          <dt className="font-medium text-zinc-400">Payment intent</dt>
-          <dd className="font-mono text-xs text-zinc-300">{job.paymentIntentId}</dd>
+          <dt className="font-medium text-zinc-400">Payment type</dt>
+          <dd className="text-white">{getPaymentMethodLabel(job)}</dd>
         </div>
         <div>
           <dt className="font-medium text-zinc-400">Payment</dt>
@@ -86,8 +87,8 @@ export function JobDetail({ job }: Props) {
           </dd>
         </div>
         <div>
-          <dt className="font-medium text-zinc-400">Customer email</dt>
-          <dd className="text-white">{job.customerEmail ?? "Not provided"}</dd>
+          <dt className="font-medium text-zinc-400">Customer</dt>
+          <dd className="text-white">{getCustomerName(job) ?? "Not provided"}</dd>
         </div>
         <div>
           <dt className="font-medium text-zinc-400">User ID</dt>
