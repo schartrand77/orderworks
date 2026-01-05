@@ -22,14 +22,13 @@ export function JobStatusQuickAction({ paymentIntentId, initialStatus, className
   const { notify } = useNotifications();
   const controlId = useId();
   const selectValue = status.toLowerCase() as StatusQueryValue;
-  const isCompleted = status === "COMPLETED";
+  const [isOpen, setIsOpen] = useState(false);
 
   function toJobStatus(value: StatusQueryValue): JobStatus {
     return value.toUpperCase() as JobStatus;
   }
 
-  async function handleStatusChange(event: React.ChangeEvent<HTMLSelectElement>) {
-    const nextValue = event.target.value as StatusQueryValue;
+  async function handleStatusChange(nextValue: StatusQueryValue) {
     if (nextValue === selectValue || isUpdating) {
       return;
     }
@@ -71,24 +70,64 @@ export function JobStatusQuickAction({ paymentIntentId, initialStatus, className
   return (
     <div className={`flex flex-col gap-1 ${className ?? ""}`}>
       <JobStatusBadge status={status} />
-      <label className="sr-only" htmlFor={controlId}>
-        Change job status
-      </label>
-      <select
-        id={controlId}
-        className={`w-full rounded-md border border-white/10 bg-[#050505] px-2 py-1 text-xs font-medium outline-none transition hover:border-white/30 focus:border-white/60 ${
-          isCompleted ? "text-transparent focus:text-zinc-100" : "text-zinc-100"
-        }`}
-        value={selectValue}
-        onChange={handleStatusChange}
-        disabled={isUpdating}
+      <div
+        className="relative"
+        tabIndex={-1}
+        onBlur={(event) => {
+          if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
+            setIsOpen(false);
+          }
+        }}
       >
-        {STATUS_OPTIONS.map(([value, label]) => (
-          <option key={value} value={value.toLowerCase()}>
-            {label}
-          </option>
-        ))}
-      </select>
+        <label className="sr-only" htmlFor={controlId}>
+          Change job status
+        </label>
+        <button
+          id={controlId}
+          type="button"
+          aria-haspopup="menu"
+          aria-expanded={isOpen}
+          disabled={isUpdating}
+          onClick={() => setIsOpen((open) => !open)}
+          className="flex w-full items-center justify-between gap-2 rounded-md border border-white/10 bg-[#050505] px-2 py-1 text-xs font-medium text-zinc-100 outline-none transition hover:border-white/30 focus:border-white/60 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          <span>{STATUS_LABELS[status]}</span>
+          <span aria-hidden="true">▾</span>
+        </button>
+        {isOpen ? (
+          <div
+            role="menu"
+            aria-labelledby={controlId}
+            className="absolute right-0 z-10 mt-2 w-full min-w-[180px] rounded-md border border-white/10 bg-[#0b0b0b] p-1 shadow-[0_20px_45px_rgba(0,0,0,0.55)]"
+          >
+            {STATUS_OPTIONS.map(([value, label]) => {
+              const optionValue = value.toLowerCase() as StatusQueryValue;
+              const isSelected = optionValue === selectValue;
+              return (
+                <button
+                  key={value}
+                  role="menuitemradio"
+                  aria-checked={isSelected}
+                  type="button"
+                  disabled={isUpdating}
+                  onClick={() => {
+                    setIsOpen(false);
+                    handleStatusChange(optionValue);
+                  }}
+                  className={`flex w-full items-center justify-between rounded px-2 py-1 text-left text-xs font-medium transition ${
+                    isSelected
+                      ? "bg-white/10 text-white"
+                      : "text-zinc-200 hover:bg-white/10 hover:text-white"
+                  }`}
+                >
+                  <span>{label}</span>
+                  {isSelected ? <span aria-hidden="true">✓</span> : null}
+                </button>
+              );
+            })}
+          </div>
+        ) : null}
+      </div>
       {error ? <p className="text-xs text-red-400">{error}</p> : null}
     </div>
   );
