@@ -22,6 +22,7 @@ export function JobStatusQuickAction({ paymentIntentId, initialStatus, className
   const { notify } = useNotifications();
   const controlId = useId();
   const selectValue = status.toLowerCase() as StatusQueryValue;
+  const isCompleted = status === "COMPLETED";
 
   function toJobStatus(value: StatusQueryValue): JobStatus {
     return value.toUpperCase() as JobStatus;
@@ -75,7 +76,9 @@ export function JobStatusQuickAction({ paymentIntentId, initialStatus, className
       </label>
       <select
         id={controlId}
-        className="w-full rounded-md border border-white/10 bg-[#050505] px-2 py-1 text-xs font-medium text-zinc-100 outline-none transition hover:border-white/30 focus:border-white/60"
+        className={`w-full rounded-md border border-white/10 bg-[#050505] px-2 py-1 text-xs font-medium outline-none transition hover:border-white/30 focus:border-white/60 ${
+          isCompleted ? "text-transparent focus:text-zinc-100" : "text-zinc-100"
+        }`}
         value={selectValue}
         onChange={handleStatusChange}
         disabled={isUpdating}

@@ -41,15 +41,22 @@ export function JobTable({ jobs }: Props) {
             return (
               <tr key={job.id} className="transition hover:bg-white/5">
                 <td className="px-4 py-4">
-                <div className="flex items-center gap-3">
-                  <span className="text-sm font-semibold text-white/80">#{job.queuePosition}</span>
-                  <JobQueueControls
-                    paymentIntentId={job.paymentIntentId}
-                    disableUp={index === 0}
-                    disableDown={index === jobs.length - 1}
-                  />
-                </div>
-              </td>
+                  <div className="flex items-center gap-3">
+                    <JobQueueControls
+                      paymentIntentId={job.paymentIntentId}
+                      disableUp={index === 0}
+                      disableDown={index === jobs.length - 1}
+                    >
+                      <span className="text-sm font-semibold text-white/80">#{job.queuePosition}</span>
+                    </JobQueueControls>
+                    <Link
+                      className="rounded-md border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-semibold text-zinc-200 transition hover:border-white/40 hover:bg-white/10"
+                      href={`/jobs/${encodeURIComponent(job.paymentIntentId)}`}
+                    >
+                      View
+                    </Link>
+                  </div>
+                </td>
                 <td className="px-4 py-4 text-white">
                   <div className="flex flex-col gap-1">
                     <span>{getCustomerName(job) ?? "Unknown customer"}</span>
@@ -75,12 +82,6 @@ export function JobTable({ jobs }: Props) {
                   {job.id === SAMPLE_JOB_ID && job.customerEmail ? (
                     <SampleJobTestEmailButton recipient={job.customerEmail} />
                   ) : null}
-                  <Link
-                    className="text-sm font-medium text-zinc-300 transition hover:text-white"
-                    href={`/jobs/${encodeURIComponent(job.paymentIntentId)}`}
-                  >
-                    View
-                  </Link>
                   <JobStatusQuickAction
                     paymentIntentId={job.paymentIntentId}
                     initialStatus={job.status}
