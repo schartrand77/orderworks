@@ -28,7 +28,7 @@ async function moveJob(paymentIntentId: string, direction: "up" | "down") {
   }
 }
 
-export function JobQueueControls({ paymentIntentId, disableUp, disableDown }: Props) {
+export function JobQueueControls({ paymentIntentId, disableUp, disableDown, children }: Props) {
   const router = useRouter();
   const [pendingDirection, setPendingDirection] = useState<"up" | "down" | null>(null);
   const isDisabled = (direction: "up" | "down") =>
