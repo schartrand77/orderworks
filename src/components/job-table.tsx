@@ -38,8 +38,14 @@ export function JobTable({ jobs }: Props) {
         <tbody className="divide-y divide-white/5">
           {jobs.map((job, index) => {
             const printTime = deriveApproximatePrintTime(job.metadata);
+            const isUnviewed = !job.viewedAt;
             return (
-              <tr key={job.id} className="transition hover:bg-white/5">
+              <tr
+                key={job.id}
+                className={`transition ${
+                  isUnviewed ? "bg-amber-500/10 hover:bg-amber-500/20" : "hover:bg-white/5"
+                }`}
+              >
                 <td className="px-4 py-4">
                   <div className="flex items-center gap-3">
                     <JobQueueControls
@@ -49,6 +55,11 @@ export function JobTable({ jobs }: Props) {
                     >
                       <span className="text-sm font-semibold text-white/80">#{job.queuePosition}</span>
                     </JobQueueControls>
+                    {isUnviewed ? (
+                      <span className="rounded-full border border-amber-400/40 bg-amber-500/20 px-2 py-0.5 text-[0.6rem] font-semibold uppercase tracking-[0.2em] text-amber-100">
+                        New
+                      </span>
+                    ) : null}
                     <Link
                       className="rounded-md border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-semibold text-zinc-200 transition hover:border-white/40 hover:bg-white/10"
                       href={`/jobs/${encodeURIComponent(job.paymentIntentId)}`}

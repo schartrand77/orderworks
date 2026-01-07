@@ -22,6 +22,11 @@ export default async function JobDetailPage({ params }: PageProps) {
     notFound();
   }
 
+  await prisma.job.updateMany({
+    where: { paymentIntentId, viewedAt: null },
+    data: { viewedAt: new Date() },
+  });
+
   return (
     <main className="mx-auto flex w-full max-w-5xl flex-col gap-8 px-6 py-10 text-zinc-50">
       <Link className="text-sm font-medium text-zinc-300 transition hover:text-white" href="/">

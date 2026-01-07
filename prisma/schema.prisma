@@ -43,6 +43,7 @@ model Job {
   queuePosition    Int        @default(0) @map("queue_position")
   createdAt        DateTime   @default(now())
   updatedAt        DateTime   @updatedAt
+  viewedAt         DateTime?  @map("viewed_at")
 
   @@map("jobs")
   @@index([status])
