@@ -53,3 +53,31 @@ export function getPaymentMethodLabel(job: Job) {
 
   return "Card";
 }
+
+function humanizeValue(value: string) {
+  const normalized = value.replace(/[_-]+/g, " ").trim();
+  if (!normalized) {
+    return "";
+  }
+  return normalized.charAt(0).toUpperCase() + normalized.slice(1);
+}
+
+export function getPaymentStatusLabel(job: Job) {
+  const rawStatus = job.paymentStatus?.trim();
+  if (!rawStatus) {
+    return null;
+  }
+
+  const normalized = rawStatus.toLowerCase();
+  const unpaidKeywords = ["unpaid", "pending", "failed", "declined", "canceled", "cancelled", "refunded", "void"];
+  if (unpaidKeywords.some((keyword) => normalized.includes(keyword))) {
+    return humanizeValue(rawStatus);
+  }
+
+  const paidKeywords = ["paid", "succeeded", "success", "captured", "complete", "completed", "settled"];
+  if (paidKeywords.some((keyword) => normalized.includes(keyword))) {
+    return "Paid";
+  }
+
+  return humanizeValue(rawStatus);
+}

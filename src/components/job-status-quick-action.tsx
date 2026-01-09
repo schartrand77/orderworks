@@ -68,65 +68,96 @@ export function JobStatusQuickAction({ paymentIntentId, initialStatus, className
   }
 
   return (
-    <div className={`flex flex-col gap-1 ${className ?? ""}`}>
-      <JobStatusBadge status={status} />
-      <div
-        className="relative"
-        tabIndex={-1}
-        onBlur={(event) => {
-          if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
-            setIsOpen(false);
-          }
-        }}
-      >
-        <label className="sr-only" htmlFor={controlId}>
-          Change job status
-        </label>
-        <button
-          id={controlId}
-          type="button"
-          aria-haspopup="menu"
-          aria-expanded={isOpen}
-          disabled={isUpdating}
-          onClick={() => setIsOpen((open) => !open)}
-          className="flex w-full items-center justify-between gap-2 rounded-md border border-white/10 bg-[#050505] px-2 py-1 text-xs font-medium text-zinc-100 outline-none transition hover:border-white/30 focus:border-white/60 disabled:cursor-not-allowed disabled:opacity-60"
+    <div className={`flex flex-col items-end gap-2 ${className ?? ""}`}>
+      <div className="flex items-center gap-2">
+        <JobStatusBadge status={status} />
+        <div
+          className="relative"
+          tabIndex={-1}
+          onBlur={(event) => {
+            if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
+              setIsOpen(false);
+            }
+          }}
         >
-          <span>{STATUS_LABELS[status]}</span>
-          <span aria-hidden="true">▾</span>
-        </button>
-        {isOpen ? (
-          <div
-            role="menu"
-            aria-labelledby={controlId}
-            className="absolute right-0 z-10 mt-2 w-full min-w-[180px] rounded-md border border-white/10 bg-[#0b0b0b] p-1 shadow-[0_20px_45px_rgba(0,0,0,0.55)]"
+          <label className="sr-only" htmlFor={controlId}>
+            Change job status
+          </label>
+          <button
+            id={controlId}
+            type="button"
+            aria-haspopup="menu"
+            aria-expanded={isOpen}
+            aria-label="Change job status"
+            disabled={isUpdating}
+            onClick={() => setIsOpen((open) => !open)}
+            className={`group flex h-7 w-7 items-center justify-center rounded-full border border-white/15 bg-white/5 text-zinc-200 shadow-[0_8px_22px_rgba(0,0,0,0.5)] transition hover:border-white/40 hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60 disabled:cursor-not-allowed disabled:opacity-50 ${
+              isOpen ? "border-white/50 bg-white/10 text-white" : ""
+            }`}
           >
-            {STATUS_OPTIONS.map(([value, label]) => {
-              const optionValue = value.toLowerCase() as StatusQueryValue;
-              const isSelected = optionValue === selectValue;
-              return (
-                <button
-                  key={value}
-                  role="menuitemradio"
-                  aria-checked={isSelected}
-                  type="button"
-                  disabled={isUpdating}
-                  onClick={() => {
-                    setIsOpen(false);
-                    handleStatusChange(optionValue);
-                  }}
-                  className={`flex w-full items-center justify-between rounded px-2 py-1 text-left text-xs font-medium transition ${
-                    isSelected
-                      ? "bg-white/10 text-white"
-                      : "text-zinc-200 hover:bg-white/10 hover:text-white"
-                  }`}
-                >
-                  <span>{label}</span>
-                  {isSelected ? <span aria-hidden="true">✓</span> : null}
-                </button>
-              );
-            })}
-          </div>
-        ) : null}
+            <svg
+              viewBox="0 0 20 20"
+              aria-hidden="true"
+              className={`h-4 w-4 transition-transform ${isOpen ? "rotate-180" : ""}`}
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.6"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M5 8l5 5 5-5" />
+            </svg>
+          </button>
+          {isOpen ? (
+            <div
+              role="menu"
+              aria-labelledby={controlId}
+              className="absolute right-0 z-10 mt-2 w-44 rounded-xl border border-white/15 bg-[#0b0b0b]/95 p-2 shadow-[0_25px_55px_rgba(0,0,0,0.65)] backdrop-blur-sm"
+            >
+              <p className="px-2 pb-2 text-[0.6rem] font-semibold uppercase tracking-[0.2em] text-zinc-400">
+                Set status
+              </p>
+              {STATUS_OPTIONS.map(([value, label]) => {
+                const optionValue = value.toLowerCase() as StatusQueryValue;
+                const isSelected = optionValue === selectValue;
+                return (
+                  <button
+                    key={value}
+                    role="menuitemradio"
+                    aria-checked={isSelected}
+                    type="button"
+                    disabled={isUpdating}
+                    onClick={() => {
+                      setIsOpen(false);
+                      handleStatusChange(optionValue);
+                    }}
+                    className={`flex w-full items-center justify-between gap-2 rounded-lg px-3 py-2 text-left text-xs font-semibold transition ${
+                      isSelected
+                        ? "bg-white/15 text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.2)]"
+                        : "text-zinc-200 hover:bg-white/10 hover:text-white"
+                    }`}
+                  >
+                    <span>{label}</span>
+                    {isSelected ? (
+                      <svg
+                        viewBox="0 0 20 20"
+                        aria-hidden="true"
+                        className="h-4 w-4 text-emerald-300"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <path d="M5 10l3 3 7-7" />
+                      </svg>
+                    ) : null}
+                  </button>
+                );
+              })}
+            </div>
+          ) : null}
+        </div>
       </div>
       {error ? <p className="text-xs text-red-400">{error}</p> : null}
     </div>

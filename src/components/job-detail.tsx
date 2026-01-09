@@ -4,7 +4,7 @@ import { FulfillmentStatus as FulfillmentStatusEnum } from "@/generated/prisma/e
 import { formatCurrency, formatDate, FULFILLMENT_STATUS_LABELS } from "@/lib/format";
 import { deriveApproximatePrintTime } from "@/lib/print-time";
 import { buildBambuStudioLink, extractModelFiles } from "@/lib/model-files";
-import { getCustomerName, getPaymentMethodLabel } from "@/lib/job-display";
+import { getCustomerName, getPaymentMethodLabel, getPaymentStatusLabel } from "@/lib/job-display";
 import { JobStatusBadge } from "@/components/job-status-badge";
 
 interface Props {
@@ -18,7 +18,7 @@ export function JobDetail({ job }: Props) {
   const printTime = deriveApproximatePrintTime(job.metadata);
   const modelFiles = extractModelFiles(job);
   const paymentMethodLabel = humanize(job.paymentMethod);
-  const paymentStatusLabel = humanize(job.paymentStatus);
+  const paymentStatusLabel = getPaymentStatusLabel(job);
   const paymentSummary =
     paymentMethodLabel || paymentStatusLabel
       ? [paymentMethodLabel, paymentStatusLabel].filter(Boolean).join(" • ")
