@@ -1,7 +1,17 @@
 ﻿# OrderWorks
 
-OrderWorks syncs MakerWorks fabrication jobs from Postgres, stores queue metadata in the `orderworks` schema, and provides an admin
-dashboard and API for reviewing and completing work.
+For a 3D printing service, having every job visible on a shared display keeps the team aligned, reduces missed prints, and makes it
+easy to spot bottlenecks or rush orders at a glance. The live queue also provides a single source of truth for status updates across
+front desk, printing, and fulfillment.
+
+- Filter jobs by status or MakerWorks creation date.
+- Inspect line items, shipping details, and metadata on each job.
+- Reorder the live job queue by using the Move Up / Move Down controls in the table; queue position is shown for every job and can be adjusted to prioritize work.
+- Open a job detail view (`/jobs/:paymentIntentId`) to review all data and mark the job complete.
+- Use **Send to slicer** to launch Bambu Studio on the workstation viewing the dashboard; the `bambu-studio://` link is handled entirely by the browser/OS, so nothing inside the container (or server) ever touches your slicer.
+- Delete a job entirely from the detail view if it was created in error or is no longer needed.
+
+Visit `/login` to authenticate with the configured admin credentials. Sessions last 12 hours by default; logging out or rotating `ADMIN_SESSION_SECRET` immediately revokes access.
 
 ## Prerequisites
 
@@ -211,22 +221,7 @@ Same as the GET endpoint but without a response body, suitable for lightweight p
 
 All API responses are JSON. Validation errors return HTTP 422 with details.
 
-## Admin UI
 
-Navigate to the root path `/` to view the OrderWorks admin dashboard:
-
-For a 3D printing service, having every job visible on a shared display keeps the team aligned, reduces missed prints, and makes it
-easy to spot bottlenecks or rush orders at a glance. The live queue also provides a single source of truth for status updates across
-front desk, printing, and fulfillment.
-
-- Filter jobs by status or MakerWorks creation date.
-- Inspect line items, shipping details, and metadata on each job.
-- Reorder the live job queue by using the Move Up / Move Down controls in the table; queue position is shown for every job and can be adjusted to prioritize work.
-- Open a job detail view (`/jobs/:paymentIntentId`) to review all data and mark the job complete.
-- Use **Send to slicer** to launch Bambu Studio on the workstation viewing the dashboard; the `bambu-studio://` link is handled entirely by the browser/OS, so nothing inside the container (or server) ever touches your slicer.
-- Delete a job entirely from the detail view if it was created in error or is no longer needed.
-
-Visit `/login` to authenticate with the configured admin credentials. Sessions last 12 hours by default; logging out or rotating `ADMIN_SESSION_SECRET` immediately revokes access.
 
 ## PWA / Home screen install
 
