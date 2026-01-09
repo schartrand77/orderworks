@@ -33,7 +33,7 @@ SKIP_DB_MIGRATE="0"
 ```
 
 OrderWorks reads jobs directly from the MakerWorks Postgres database and keeps its own copy (plus queue metadata) inside the
-`orderworks` schema. No webhook is required; point `DATABASE_URL` (and `DOCKER_DATABASE_URL` for Docker Compose) at MakerWorks.
+`orderworks` schema. Point `DATABASE_URL` (and `DOCKER_DATABASE_URL` for Docker Compose) at MakerWorks.
 Provide `RECEIPT_FROM_EMAIL` plus either `RESEND_API_KEY` or the SMTP variables to enable receipt emails when a job is marked
 completed. Set `RECEIPT_REPLY_TO_EMAIL` if replies should route to a different mailbox (for example, `info@makerworks.app`).
 
@@ -148,7 +148,7 @@ The template defaults to pulling `ghcr.io/schartrand77/orderworks:latest`; updat
 OrderWorks connects to the same Postgres instance that powers MakerWorks. MakerWorks stores jobs in `public.jobs`; OrderWorks keeps
 its own working copy (with queue and fulfillment metadata) inside `orderworks.jobs`. On startup and whenever an admin hits the
 dashboard or job APIs, OrderWorks compares the latest `public.jobs.updatedAt` timestamp with what it has already synced. New or
-modified MakerWorks rows are copied over automatically; no webhook or additional HTTP access is required. Older MakerWorks installs
+modified MakerWorks rows are copied over automatically. Older MakerWorks installs
 only need to ensure the Postgres role used by OrderWorks can `SELECT` from `public.jobs`.
 
 OrderWorks never mutates the MakerWorks tables. Queue position, fulfillment status, payment annotations, and notes all live
@@ -215,6 +215,10 @@ All API responses are JSON. Validation errors return HTTP 422 with details.
 
 Navigate to the root path `/` to view the OrderWorks admin dashboard:
 
+For a 3D printing service, having every job visible on a shared display keeps the team aligned, reduces missed prints, and makes it
+easy to spot bottlenecks or rush orders at a glance. The live queue also provides a single source of truth for status updates across
+front desk, printing, and fulfillment.
+
 - Filter jobs by status or MakerWorks creation date.
 - Inspect line items, shipping details, and metadata on each job.
 - Reorder the live job queue by using the Move Up / Move Down controls in the table; queue position is shown for every job and can be adjusted to prioritize work.
@@ -235,4 +239,5 @@ If you are behind a reverse proxy/ingress, ensure it terminates TLS and forwards
 
 ## MakerWorks configuration
 
-Because OrderWorks now syncs directly from the MakerWorks database, the only MakerWorks-side change required is granting the OrderWorks Postgres user read access to `public.jobs`. (The default `postgres` superuser already has this.) Remove any previously configured MakerWorks webhooks that pointed at OrderWorks-new jobs will appear automatically as soon as they are saved inside MakerWorks.
+Because OrderWorks now syncs directly from the MakerWorks database, the only MakerWorks-side change required is granting the
+OrderWorks Postgres user read access to `public.jobs`. (The default `postgres` superuser already has this.)
