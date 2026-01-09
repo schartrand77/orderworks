@@ -1,7 +1,7 @@
 ﻿# OrderWorks
 
-OrderWorks ingests MakerWorks fabrication job forms, persists them in Postgres, and provides an admin dashboard for reviewing and
- completing work.
+OrderWorks syncs MakerWorks fabrication jobs from Postgres, stores queue metadata in the `orderworks` schema, and provides an admin
+dashboard and API for reviewing and completing work.
 
 ## Prerequisites
 
@@ -10,7 +10,7 @@ OrderWorks ingests MakerWorks fabrication job forms, persists them in Postgres, 
 
 ## Environment variables
 
-Create a `.env` file (or set environment variables in your deployment platform) with:
+Create a `.env` file (or set environment variables in your deployment platform) with the variables below.
 
 ```env
 DATABASE_URL="postgresql://postgres:postgres@localhost:5432/makerworks?schema=orderworks"
@@ -28,11 +28,21 @@ SMTP_PORT="587"
 SMTP_USER="smtp-username"
 SMTP_PASSWORD="smtp-password"
 SMTP_SECURE="false"
+# Optional - skip auto-migrations in docker-entrypoint.sh
+SKIP_DB_MIGRATE="0"
 ```
 
-OrderWorks now reads jobs directly from the MakerWorks Postgres database and keeps its own copy of each job (plus queue metadata) inside the `orderworks` schema. No webhook is required anymore—just point `DATABASE_URL` and `DOCKER_DATABASE_URL` at the MakerWorks instance. Provide `RECEIPT_FROM_EMAIL` plus either `RESEND_API_KEY` or the SMTP variables to enable receipt emails whenever a job is marked as completed. Leave `RESEND_API_KEY` blank if you plan to send mail only via SMTP. Set `RECEIPT_REPLY_TO_EMAIL` if replies should route to a different mailbox (e.g., `info@makerworks.app`). 
+OrderWorks reads jobs directly from the MakerWorks Postgres database and keeps its own copy (plus queue metadata) inside the
+`orderworks` schema. No webhook is required; point `DATABASE_URL` (and `DOCKER_DATABASE_URL` for Docker Compose) at MakerWorks.
+Provide `RECEIPT_FROM_EMAIL` plus either `RESEND_API_KEY` or the SMTP variables to enable receipt emails when a job is marked
+completed. Set `RECEIPT_REPLY_TO_EMAIL` if replies should route to a different mailbox (for example, `info@makerworks.app`).
 
-`DATABASE_URL` points the Next.js dev server at Postgres listening on `localhost:5432`. Running `docker compose up` now starts a bundled Postgres container that exposes this port (and automatically creates the `orderworks` schema via `docker/postgres-init/01-orderworks-schema.sql`), so the default connection string works out of the box. `DOCKER_DATABASE_URL` is only used by `docker-compose.yml`; it defaults to the Compose `db` service but you can override it if you need the dev container to talk to the real MakerWorks database on your network. `ADMIN_USERNAME` and `ADMIN_PASSWORD` gate access to the dashboard and admin-only API routes. `ADMIN_SESSION_SECRET` signs the session cookie; change it any time you need to invalidate existing logins.
+`DATABASE_URL` points the Next.js dev server at Postgres listening on `localhost:5432`. Running `docker compose up` starts a bundled
+Postgres container that exposes this port (and automatically creates the `orderworks` schema via
+`docker/postgres-init/01-orderworks-schema.sql`), so the default connection string works out of the box. `DOCKER_DATABASE_URL` is
+only used by `docker-compose.yml`; it defaults to the Compose `db` service but you can override it if you need the dev container to
+talk to the real MakerWorks database on your network. `ADMIN_USERNAME` and `ADMIN_PASSWORD` gate access to the dashboard and
+admin-only API routes. `ADMIN_SESSION_SECRET` signs the session cookie; change it any time you need to invalidate existing logins.
 
 ## Install dependencies
 
@@ -135,9 +145,26 @@ The template defaults to pulling `ghcr.io/schartrand77/orderworks:latest`; updat
 
 ## MakerWorks database synchronization
 
-OrderWorks connects to the exact same Postgres instance that powers MakerWorks. MakerWorks stores its jobs in the `public.jobs` table; OrderWorks keeps its own working copy (with queue / fulfillment metadata) inside the `orderworks.jobs` table. On every startup and any time an admin hits the dashboard or job APIs, OrderWorks compares the latest `public.jobs.updatedAt` timestamp with what it has already synced. New or modified MakerWorks rows are copied over automatically—no webhook or additional HTTP access is necessary. Older MakerWorks installs only need to ensure the Postgres role used by OrderWorks can `SELECT` from `public.jobs`.
+OrderWorks connects to the same Postgres instance that powers MakerWorks. MakerWorks stores jobs in `public.jobs`; OrderWorks keeps
+its own working copy (with queue and fulfillment metadata) inside `orderworks.jobs`. On startup and whenever an admin hits the
+dashboard or job APIs, OrderWorks compares the latest `public.jobs.updatedAt` timestamp with what it has already synced. New or
+modified MakerWorks rows are copied over automatically; no webhook or additional HTTP access is required. Older MakerWorks installs
+only need to ensure the Postgres role used by OrderWorks can `SELECT` from `public.jobs`.
 
-OrderWorks never mutates the MakerWorks tables. Queue position, fulfillment status, payment annotations, and notes all live exclusively in the `orderworks` schema. MakerWorks remains responsible for creating jobs; OrderWorks reads them as soon as they appear in the database.
+OrderWorks never mutates the MakerWorks tables. Queue position, fulfillment status, payment annotations, and notes all live
+exclusively in the `orderworks` schema. MakerWorks remains responsible for creating jobs; OrderWorks reads them as soon as they
+appear in the database.
+
+## StockWorks integration
+
+StockWorks can surface the OrderWorks queue so inventory and production stay aligned:
+
+- If StockWorks points its `DATABASE_URL` at the same MakerWorks Postgres instance, it reads from `orderworks.jobs` directly and the
+  Orders tab populates automatically.
+- If StockWorks cannot reach the database (for example it remains on SQLite), it can pull from the OrderWorks HTTP API instead. In
+  that case configure StockWorks with `ORDERWORKS_BASE_URL` plus the OrderWorks `ADMIN_USERNAME` and `ADMIN_PASSWORD`.
+
+OrderWorks does not require any extra environment variables for StockWorks.
 
 ## API reference
 
@@ -190,7 +217,7 @@ Navigate to the root path `/` to view the OrderWorks admin dashboard:
 
 - Filter jobs by status or MakerWorks creation date.
 - Inspect line items, shipping details, and metadata on each job.
-- Reorder the live job queue by using the ↑ / ↓ buttons in the table; queue position is shown for every job and can be adjusted to prioritize work.
+- Reorder the live job queue by using the Move Up / Move Down controls in the table; queue position is shown for every job and can be adjusted to prioritize work.
 - Open a job detail view (`/jobs/:paymentIntentId`) to review all data and mark the job complete.
 - Use **Send to slicer** to launch Bambu Studio on the workstation viewing the dashboard; the `bambu-studio://` link is handled entirely by the browser/OS, so nothing inside the container (or server) ever touches your slicer.
 - Delete a job entirely from the detail view if it was created in error or is no longer needed.
@@ -209,6 +236,3 @@ If you are behind a reverse proxy/ingress, ensure it terminates TLS and forwards
 ## MakerWorks configuration
 
 Because OrderWorks now syncs directly from the MakerWorks database, the only MakerWorks-side change required is granting the OrderWorks Postgres user read access to `public.jobs`. (The default `postgres` superuser already has this.) Remove any previously configured MakerWorks webhooks that pointed at OrderWorks-new jobs will appear automatically as soon as they are saved inside MakerWorks.
-
-
-
