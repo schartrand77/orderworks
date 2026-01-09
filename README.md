@@ -2,6 +2,14 @@
 
 OrderWorks is a simple dashboard for 3D printing jobs. It pulls jobs from MakerWorks, keeps a working copy with queue notes, and lets your team review and complete work from one screen.
 
+## Screenshots
+
+Dashboard view:
+![OrderWorks dashboard](public/screenshots/owdashboard.png)
+
+Job detail view:
+![OrderWorks job detail](public/screenshots/owjobdetail.png)
+
 ## Why this is helpful
 
 When every job is on a shared display, the whole shop stays in sync. It is easier to:
