@@ -2,7 +2,7 @@ import Link from "next/link";
 import type { Job } from "@/generated/prisma/client";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { deriveApproximatePrintTime } from "@/lib/print-time";
-import { getCustomerName, getPaymentMethodLabel } from "@/lib/job-display";
+import { getCustomerName, getPaymentMethodLabel, getPaymentStatusLabel } from "@/lib/job-display";
 import { JobQueueControls } from "@/components/job-queue-controls";
 import { SampleJobTestEmailButton } from "@/components/sample-job-test-email-button";
 import { JobStatusQuickAction } from "@/components/job-status-quick-action";
@@ -39,6 +39,7 @@ export function JobTable({ jobs }: Props) {
           {jobs.map((job, index) => {
             const printTime = deriveApproximatePrintTime(job.metadata);
             const isUnviewed = !job.viewedAt;
+            const paymentStatusLabel = getPaymentStatusLabel(job);
             return (
               <tr
                 key={job.id}
@@ -81,25 +82,34 @@ export function JobTable({ jobs }: Props) {
                     ) : null}
                   </div>
                 </td>
-              <td className="px-4 py-4 text-zinc-200">{getPaymentMethodLabel(job)}</td>
-              <td className="px-4 py-4 text-white">
-                {formatCurrency(job.totalCents, job.currency)}
-              </td>
-              <td className="px-4 py-4 text-zinc-400">
-                {formatDate(job.makerworksCreatedAt)}
-              </td>
-              <td className="px-4 py-4 text-right">
-                <div className="flex flex-col items-end gap-3">
-                  {job.id === SAMPLE_JOB_ID && job.customerEmail ? (
-                    <SampleJobTestEmailButton recipient={job.customerEmail} />
-                  ) : null}
-                  <JobStatusQuickAction
-                    paymentIntentId={job.paymentIntentId}
-                    initialStatus={job.status}
-                    className="w-full max-w-[180px]"
-                  />
-                </div>
-              </td>
+                <td className="px-4 py-4 text-zinc-200">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span>{getPaymentMethodLabel(job)}</span>
+                    {paymentStatusLabel ? (
+                      <span className="rounded-full border border-emerald-400/40 bg-emerald-500/15 px-2 py-0.5 text-[0.6rem] font-semibold uppercase tracking-[0.18em] text-emerald-200">
+                        {paymentStatusLabel}
+                      </span>
+                    ) : null}
+                  </div>
+                </td>
+                <td className="px-4 py-4 text-white">
+                  {formatCurrency(job.totalCents, job.currency)}
+                </td>
+                <td className="px-4 py-4 text-zinc-400">
+                  {formatDate(job.makerworksCreatedAt)}
+                </td>
+                <td className="px-4 py-4 text-right">
+                  <div className="flex flex-col items-end gap-3">
+                    {job.id === SAMPLE_JOB_ID && job.customerEmail ? (
+                      <SampleJobTestEmailButton recipient={job.customerEmail} />
+                    ) : null}
+                    <JobStatusQuickAction
+                      paymentIntentId={job.paymentIntentId}
+                      initialStatus={job.status}
+                      className="w-full max-w-[180px]"
+                    />
+                  </div>
+                </td>
               </tr>
             );
           })}

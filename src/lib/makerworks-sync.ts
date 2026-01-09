@@ -15,6 +15,8 @@ type MakerWorksJobRow = {
   metadata: Prisma.JsonValue | null;
   userId: string | null;
   customerEmail: string | null;
+  paymentMethod: string | null;
+  paymentStatus: string | null;
   makerworksCreatedAt: Date;
   updatedAt: Date;
   status: string | null;
@@ -39,6 +41,19 @@ export async function makerWorksJobsTableExists() {
   return result?.exists ?? false;
 }
 
+async function makerWorksJobFormTableExists() {
+  const [result] = await prisma.$queryRaw<{ exists: boolean }[]>(
+    Prisma.sql`
+      SELECT EXISTS (
+        SELECT 1
+        FROM information_schema.tables
+        WHERE table_schema = 'public' AND table_name = 'JobForm'
+      ) AS "exists"
+    `,
+  );
+  return result?.exists ?? false;
+}
+
 function normalizeJobStatus(value: string | null): JobStatus {
   switch (value) {
     case JobStatus.PRINTING:
@@ -52,23 +67,47 @@ function normalizeJobStatus(value: string | null): JobStatus {
   }
 }
 
-async function fetchMakerWorksRows(since?: Date | null) {
-  const selectFragment = Prisma.sql`
+async function fetchMakerWorksRows(hasJobFormTable: boolean, since?: Date | null) {
+  const selectFragment = hasJobFormTable
+    ? Prisma.sql`
     SELECT
-      id,
-      "paymentIntentId" AS "paymentIntentId",
-      "totalCents" AS "totalCents",
-      currency,
-      "lineItems" AS "lineItems",
-      shipping,
-      metadata,
-      "userId" AS "userId",
-      "customerEmail" AS "customerEmail",
-      "makerworks_created_at" AS "makerworksCreatedAt",
-      "updatedAt" AS "updatedAt",
-      status::text AS status,
-      notes
-    FROM public."jobs"
+      source.id,
+      source."paymentIntentId" AS "paymentIntentId",
+      source."totalCents" AS "totalCents",
+      source.currency,
+      source."lineItems" AS "lineItems",
+      source.shipping,
+      source.metadata,
+      source."userId" AS "userId",
+      source."customerEmail" AS "customerEmail",
+      jobform."payment_method" AS "paymentMethod",
+      jobform."payment_status" AS "paymentStatus",
+      source."makerworks_created_at" AS "makerworksCreatedAt",
+      source."updatedAt" AS "updatedAt",
+      source.status::text AS status,
+      source.notes
+    FROM public."jobs" AS source
+    LEFT JOIN public."JobForm" AS jobform
+      ON jobform."paymentIntentId" = source."paymentIntentId"
+  `
+    : Prisma.sql`
+    SELECT
+      source.id,
+      source."paymentIntentId" AS "paymentIntentId",
+      source."totalCents" AS "totalCents",
+      source.currency,
+      source."lineItems" AS "lineItems",
+      source.shipping,
+      source.metadata,
+      source."userId" AS "userId",
+      source."customerEmail" AS "customerEmail",
+      NULL::text AS "paymentMethod",
+      NULL::text AS "paymentStatus",
+      source."makerworks_created_at" AS "makerworksCreatedAt",
+      source."updatedAt" AS "updatedAt",
+      source.status::text AS status,
+      source.notes
+    FROM public."jobs" AS source
   `;
 
   if (!since) {
@@ -112,7 +151,8 @@ async function performSync() {
     return 0;
   }
 
-  const rows = await fetchMakerWorksRows(needsFullSync ? null : lastSynced);
+  const hasJobFormTable = await makerWorksJobFormTableExists();
+  const rows = await fetchMakerWorksRows(hasJobFormTable, needsFullSync ? null : lastSynced);
 
   if (rows.length === 0) {
     lastSuccessfulSyncAt = new Date();
@@ -151,6 +191,8 @@ async function performSync() {
       metadata: row.metadata === null ? Prisma.JsonNull : (row.metadata as Prisma.InputJsonValue),
       userId: normalizeString(row.userId),
       customerEmail: normalizeString(row.customerEmail),
+      paymentMethod: normalizeString(row.paymentMethod),
+      paymentStatus: normalizeString(row.paymentStatus),
       makerworksCreatedAt: row.makerworksCreatedAt,
       makerworksUpdatedAt: row.updatedAt,
     };
@@ -174,6 +216,8 @@ async function performSync() {
           metadata: row.metadata === null ? Prisma.JsonNull : (row.metadata as Prisma.InputJsonValue),
           userId: normalizeString(row.userId),
           customerEmail: normalizeString(row.customerEmail),
+          paymentMethod: normalizeString(row.paymentMethod),
+          paymentStatus: normalizeString(row.paymentStatus),
           makerworksCreatedAt: row.makerworksCreatedAt,
           makerworksUpdatedAt: row.updatedAt,
           queuePosition,
