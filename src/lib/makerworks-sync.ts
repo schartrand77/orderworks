@@ -112,12 +112,12 @@ async function fetchMakerWorksRows(hasJobFormTable: boolean, since?: Date | null
 
   if (!since) {
     return prisma.$queryRaw<MakerWorksJobRow[]>(
-      Prisma.sql`${selectFragment} ORDER BY "makerworks_created_at" ASC`,
+      Prisma.sql`${selectFragment} ORDER BY source."makerworks_created_at" ASC`,
     );
   }
 
   return prisma.$queryRaw<MakerWorksJobRow[]>(
-    Prisma.sql`${selectFragment} WHERE "updatedAt" > ${since} ORDER BY "updatedAt" ASC`,
+    Prisma.sql`${selectFragment} WHERE source."updatedAt" > ${since} ORDER BY source."updatedAt" ASC`,
   );
 }
 
