@@ -47,6 +47,7 @@ async function JobsSection({ searchParams }: { searchParams?: Promise<SearchPara
   let statuses: JobStatus[] = [];
   let createdFrom: Date | undefined;
   let createdTo: Date | undefined;
+  let jobs = [] as Awaited<ReturnType<typeof prisma.job.findMany>>;
 
   try {
     const filters = parseJobFilters(params);
@@ -57,25 +58,32 @@ async function JobsSection({ searchParams }: { searchParams?: Promise<SearchPara
     error = cause instanceof Error ? cause.message : "Invalid filters";
   }
 
-  await syncMakerWorksJobs();
+  try {
+    await syncMakerWorksJobs();
 
-  const jobs = await prisma.job.findMany({
-    where: {
-      ...(statuses.length > 0 ? { status: { in: statuses } } : {}),
-      ...(createdFrom || createdTo
-        ? {
-            makerworksCreatedAt: {
-              ...(createdFrom ? { gte: createdFrom } : {}),
-              ...(createdTo ? { lte: createdTo } : {}),
-            },
-          }
-        : {}),
-    },
-    orderBy: [
-      { makerworksCreatedAt: "desc" },
-      { queuePosition: "asc" },
-    ],
-  });
+    jobs = await prisma.job.findMany({
+      where: {
+        ...(statuses.length > 0 ? { status: { in: statuses } } : {}),
+        ...(createdFrom || createdTo
+          ? {
+              makerworksCreatedAt: {
+                ...(createdFrom ? { gte: createdFrom } : {}),
+                ...(createdTo ? { lte: createdTo } : {}),
+              },
+            }
+          : {}),
+      },
+      orderBy: [
+        { makerworksCreatedAt: "desc" },
+        { queuePosition: "asc" },
+      ],
+    });
+  } catch (cause) {
+    if (!error) {
+      error = cause instanceof Error ? cause.message : "Unable to load jobs";
+    }
+    console.error("Failed to load jobs for dashboard.", cause);
+  }
 
   const statusValue = extractSingle(resolvedSearchParams?.status);
   const createdFromValue = extractSingle(resolvedSearchParams?.createdFrom);
