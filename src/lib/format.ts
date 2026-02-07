@@ -12,6 +12,7 @@ export const STATUS_LABELS: Record<JobStatus, string> = {
 
 export const FULFILLMENT_STATUS_LABELS: Record<FulfillmentStatus, string> = {
   [FulfillmentStatusEnum.PENDING]: "Not delivered",
+  [FulfillmentStatusEnum.READY]: "Ready for pickup",
   [FulfillmentStatusEnum.SHIPPED]: "Shipped",
   [FulfillmentStatusEnum.PICKED_UP]: "Picked up",
 };

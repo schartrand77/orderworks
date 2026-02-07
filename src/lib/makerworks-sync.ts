@@ -1,5 +1,5 @@
 import { Prisma } from "@/generated/prisma/client";
-import { JobStatus } from "@/generated/prisma/enums";
+import { JobStatus, FulfillmentStatus } from "@/generated/prisma/enums";
 import { prisma } from "@/lib/prisma";
 import { getNextQueuePosition } from "@/lib/job-queue";
 
@@ -17,6 +17,8 @@ type MakerWorksJobRow = {
   customerEmail: string | null;
   paymentMethod: string | null;
   paymentStatus: string | null;
+  fulfillmentStatus: string | null;
+  fulfilledAt: Date | null;
   makerworksCreatedAt: Date;
   updatedAt: Date;
   status: string | null;
@@ -67,6 +69,19 @@ function normalizeJobStatus(value: string | null): JobStatus {
   }
 }
 
+function normalizeFulfillmentStatus(value: string | null): FulfillmentStatus {
+  switch (value) {
+    case "ready":
+      return FulfillmentStatus.READY;
+    case "shipped":
+      return FulfillmentStatus.SHIPPED;
+    case "picked_up":
+      return FulfillmentStatus.PICKED_UP;
+    default:
+      return FulfillmentStatus.PENDING;
+  }
+}
+
 async function fetchMakerWorksRows(hasJobFormTable: boolean, since?: Date | null) {
   const selectFragment = hasJobFormTable
     ? Prisma.sql`
@@ -82,6 +97,8 @@ async function fetchMakerWorksRows(hasJobFormTable: boolean, since?: Date | null
       source."customerEmail" AS "customerEmail",
       jobform."payment_method" AS "paymentMethod",
       jobform."payment_status" AS "paymentStatus",
+      jobform."fulfillment_status" AS "fulfillmentStatus",
+      jobform."fulfilled_at" AS "fulfilledAt",
       source."makerworks_created_at" AS "makerworksCreatedAt",
       source."updatedAt" AS "updatedAt",
       source.status::text AS status,
@@ -103,6 +120,8 @@ async function fetchMakerWorksRows(hasJobFormTable: boolean, since?: Date | null
       source."customerEmail" AS "customerEmail",
       NULL::text AS "paymentMethod",
       NULL::text AS "paymentStatus",
+      NULL::text AS "fulfillmentStatus",
+      NULL::timestamp AS "fulfilledAt",
       source."makerworks_created_at" AS "makerworksCreatedAt",
       source."updatedAt" AS "updatedAt",
       source.status::text AS status,
@@ -193,6 +212,8 @@ async function performSync() {
       customerEmail: normalizeString(row.customerEmail),
       paymentMethod: normalizeString(row.paymentMethod),
       paymentStatus: normalizeString(row.paymentStatus),
+      fulfillmentStatus: normalizeFulfillmentStatus(row.fulfillmentStatus),
+      fulfilledAt: row.fulfilledAt ?? null,
       makerworksCreatedAt: row.makerworksCreatedAt,
       makerworksUpdatedAt: row.updatedAt,
     };
@@ -218,6 +239,8 @@ async function performSync() {
           customerEmail: normalizeString(row.customerEmail),
           paymentMethod: normalizeString(row.paymentMethod),
           paymentStatus: normalizeString(row.paymentStatus),
+          fulfillmentStatus: normalizeFulfillmentStatus(row.fulfillmentStatus),
+          fulfilledAt: row.fulfilledAt ?? null,
           makerworksCreatedAt: row.makerworksCreatedAt,
           makerworksUpdatedAt: row.updatedAt,
           queuePosition,

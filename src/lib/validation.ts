@@ -34,7 +34,7 @@ const lineItemSchema = z
 
 const jobStatusValues = ["pending", "printing", "completed"] as const;
 type JobStatusInput = (typeof jobStatusValues)[number];
-const fulfillmentStatusValues = ["pending", "shipped", "picked_up"] as const;
+const fulfillmentStatusValues = ["pending", "ready", "shipped", "picked_up"] as const;
 type FulfillmentStatusInput = (typeof fulfillmentStatusValues)[number];
 
 const jobStatusMap: Record<JobStatusInput, JobStatus> = {
@@ -45,6 +45,7 @@ const jobStatusMap: Record<JobStatusInput, JobStatus> = {
 
 const fulfillmentStatusMap: Record<FulfillmentStatusInput, FulfillmentStatus> = {
   pending: FulfillmentStatusEnum.PENDING,
+  ready: FulfillmentStatusEnum.READY,
   shipped: FulfillmentStatusEnum.SHIPPED,
   picked_up: FulfillmentStatusEnum.PICKED_UP,
 };

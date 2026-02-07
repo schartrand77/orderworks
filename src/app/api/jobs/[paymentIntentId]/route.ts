@@ -6,6 +6,7 @@ import { sendReceiptEmail } from "@/lib/email";
 import { prisma } from "@/lib/prisma";
 import { jobStatusUpdateSchema, normalizeJobStatusUpdatePayload } from "@/lib/validation";
 import { syncMakerWorksJobs } from "@/lib/makerworks-sync";
+import { updateMakerWorksFulfillmentStatus } from "@/lib/makerworks-writeback";
 
 interface Params {
   paymentIntentId: string;
@@ -82,13 +83,24 @@ export async function PATCH(request: NextRequest, context: { params: Promise<Par
   if (normalized.fulfillmentStatus !== undefined) {
     data.fulfillmentStatus = normalized.fulfillmentStatus;
     data.fulfilledAt =
-      normalized.fulfillmentStatus === FulfillmentStatusEnum.PENDING ? null : new Date();
+      normalized.fulfillmentStatus === FulfillmentStatusEnum.SHIPPED ||
+      normalized.fulfillmentStatus === FulfillmentStatusEnum.PICKED_UP
+        ? new Date()
+        : null;
   }
 
   const updated = await prisma.job.update({
     where: { paymentIntentId },
     data,
   });
+
+  if (normalized.fulfillmentStatus !== undefined) {
+    try {
+      await updateMakerWorksFulfillmentStatus(paymentIntentId, normalized.fulfillmentStatus);
+    } catch (error) {
+      console.error("Failed to write fulfillment status back to MakerWorks:", error);
+    }
+  }
 
   if (shouldSendReceipt) {
     try {

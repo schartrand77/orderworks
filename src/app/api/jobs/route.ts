@@ -104,8 +104,13 @@ export async function POST(request: NextRequest) {
       ? FulfillmentStatus.SHIPPED
       : payload.fulfillmentStatus === "picked_up"
         ? FulfillmentStatus.PICKED_UP
-        : FulfillmentStatus.PENDING;
-  const fulfilledAt = fulfillmentStatus === FulfillmentStatus.PENDING ? null : new Date();
+        : payload.fulfillmentStatus === "ready"
+          ? FulfillmentStatus.READY
+          : FulfillmentStatus.PENDING;
+  const fulfilledAt =
+    fulfillmentStatus === FulfillmentStatus.SHIPPED || fulfillmentStatus === FulfillmentStatus.PICKED_UP
+      ? new Date()
+      : null;
 
   try {
     const job = await prisma.job.create({

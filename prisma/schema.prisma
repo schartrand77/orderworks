@@ -18,6 +18,7 @@ enum JobStatus {
 
 enum FulfillmentStatus {
   PENDING   @map("pending")
+  READY     @map("ready")
   SHIPPED   @map("shipped")
   PICKED_UP @map("picked_up")
 }
