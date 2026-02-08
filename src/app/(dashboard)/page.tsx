@@ -74,8 +74,8 @@ async function JobsSection({ searchParams }: { searchParams?: Promise<SearchPara
           : {}),
       },
       orderBy: [
-        { makerworksCreatedAt: "desc" },
         { queuePosition: "asc" },
+        { makerworksCreatedAt: "desc" },
       ],
     });
   } catch (cause) {

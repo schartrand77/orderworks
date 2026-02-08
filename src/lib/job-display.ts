@@ -2,6 +2,15 @@ import type { Job } from "@/generated/prisma/client";
 
 type JsonRecord = Record<string, unknown>;
 
+interface JobLike {
+  shipping: Job["shipping"];
+  metadata: Job["metadata"];
+  customerEmail: Job["customerEmail"];
+  paymentMethod: Job["paymentMethod"];
+  paymentIntentId: Job["paymentIntentId"];
+  paymentStatus: Job["paymentStatus"];
+}
+
 function extractNestedString(source: unknown, path: string[]) {
   let current: unknown = source;
   for (const key of path) {
@@ -13,7 +22,7 @@ function extractNestedString(source: unknown, path: string[]) {
   return typeof current === "string" && current.trim().length > 0 ? current : null;
 }
 
-export function getCustomerName(job: Job) {
+export function getCustomerName(job: JobLike) {
   const shippingName =
     extractNestedString(job.shipping, ["address", "name"]) ?? extractNestedString(job.shipping, ["name"]);
   if (shippingName) {
@@ -35,7 +44,7 @@ export function getCustomerName(job: Job) {
   return null;
 }
 
-export function getPaymentMethodLabel(job: Job) {
+export function getPaymentMethodLabel(job: JobLike) {
   const method = job.paymentMethod?.toLowerCase().trim();
   if (method) {
     if (method.includes("cash") || method.includes("check")) {
@@ -62,7 +71,7 @@ function humanizeValue(value: string) {
   return normalized.charAt(0).toUpperCase() + normalized.slice(1);
 }
 
-export function getPaymentStatusLabel(job: Job) {
+export function getPaymentStatusLabel(job: JobLike) {
   const rawStatus = job.paymentStatus?.trim();
   if (!rawStatus) {
     return null;
