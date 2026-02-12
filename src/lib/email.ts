@@ -1,6 +1,7 @@
 import nodemailer from "nodemailer";
 import type { Job } from "@/generated/prisma/client";
 import { buildReceiptEmail } from "@/lib/receipt";
+import { buildInvoiceEmail } from "@/lib/invoice";
 
 const RESEND_ENDPOINT = "https://api.resend.com/emails";
 
@@ -18,12 +19,12 @@ export async function sendReceiptEmail(job: Job) {
     throw new Error("Job is missing a customer email address.");
   }
 
-  const fromEmail = process.env.RECEIPT_FROM_EMAIL;
+  const fromEmail = process.env.RECEIPT_FROM_EMAIL?.trim();
   if (!fromEmail) {
     throw new Error("RECEIPT_FROM_EMAIL is not configured.");
   }
 
-  const replyToEmail = process.env.RECEIPT_REPLY_TO_EMAIL;
+  const replyToEmail = process.env.RECEIPT_REPLY_TO_EMAIL?.trim();
   const { subject, text, html } = buildReceiptEmail(job);
   const payload: EmailPayload = {
     from: fromEmail,
@@ -37,8 +38,32 @@ export async function sendReceiptEmail(job: Job) {
   await deliverEmail(payload);
 }
 
+export async function sendInvoiceEmail(job: Job) {
+  if (!job.customerEmail) {
+    throw new Error("Job is missing a customer email address.");
+  }
+
+  const fromEmail = process.env.INVOICE_FROM_EMAIL?.trim() || process.env.RECEIPT_FROM_EMAIL?.trim();
+  if (!fromEmail) {
+    throw new Error("INVOICE_FROM_EMAIL or RECEIPT_FROM_EMAIL is required.");
+  }
+
+  const replyToEmail = process.env.INVOICE_REPLY_TO_EMAIL?.trim() || process.env.RECEIPT_REPLY_TO_EMAIL?.trim();
+  const { subject, text, html } = buildInvoiceEmail(job);
+  const payload: EmailPayload = {
+    from: fromEmail,
+    to: job.customerEmail,
+    subject,
+    text,
+    html,
+    replyTo: replyToEmail,
+  };
+
+  await deliverEmail(payload);
+}
+
 export async function sendTestEmail(recipient: string) {
-  const fromEmail = process.env.RECEIPT_FROM_EMAIL;
+  const fromEmail = process.env.RECEIPT_FROM_EMAIL?.trim();
   if (!fromEmail) {
     throw new Error("RECEIPT_FROM_EMAIL is not configured.");
   }

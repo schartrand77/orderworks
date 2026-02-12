@@ -62,7 +62,7 @@ Open the dashboard at `http://localhost:3000`.
 
 ## Environment variables (plain English)
 
-Put these in `.env` or your hosting platformís settings.
+Put these in `.env` or your hosting platform‚Äôs settings.
 
 Required:
 - `DATABASE_URL`: The MakerWorks Postgres connection string. OrderWorks reads jobs from here and stores its own queue data in the `orderworks` schema.
@@ -74,8 +74,10 @@ Used for Docker Compose only:
 - `DOCKER_DATABASE_URL`: The database connection string used by `docker-compose.yml`.
 
 Email receipts (optional):
-- `RECEIPT_FROM_EMAIL`: The ìFromî address shown on completion emails.
+- `RECEIPT_FROM_EMAIL`: The ‚ÄúFrom‚Äù address shown on completion emails.
 - `RECEIPT_REPLY_TO_EMAIL`: Optional reply-to address.
+- `INVOICE_FROM_EMAIL`: Optional "From" address for invoice emails (falls back to `RECEIPT_FROM_EMAIL`).
+- `INVOICE_REPLY_TO_EMAIL`: Optional reply-to for invoice emails (falls back to `RECEIPT_REPLY_TO_EMAIL`).
 - `RESEND_API_KEY`: Use this if you send mail via Resend.
 - `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `SMTP_SECURE`: Use these if you send mail via SMTP instead of Resend.
 
@@ -98,6 +100,17 @@ When a job is marked completed, OrderWorks can send a receipt email. To enable t
 - Either `RESEND_API_KEY` or the SMTP variables
 
 If those are missing, completing a job that needs email will fail until you configure them.
+
+## Invoice emails
+
+On the job detail page, admins can send an invoice email when payment is still marked as outstanding.
+
+Required:
+- `RECEIPT_FROM_EMAIL` or `INVOICE_FROM_EMAIL`
+- Either `RESEND_API_KEY` or the SMTP variables
+
+Optional:
+- `INVOICE_REPLY_TO_EMAIL`
 
 ## Docker Compose (optional)
 
@@ -123,3 +136,5 @@ The only MakerWorks-side requirement is that the OrderWorks database user can re
 ## Need help?
 
 Check the `docs/` folder for extra deployment notes or ask your team for the MakerWorks database connection details.
+
+

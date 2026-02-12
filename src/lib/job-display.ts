@@ -90,3 +90,14 @@ export function getPaymentStatusLabel(job: JobLike) {
 
   return humanizeValue(rawStatus);
 }
+
+export function hasOutstandingBalance(job: JobLike) {
+  const rawStatus = job.paymentStatus?.trim();
+  if (!rawStatus) {
+    return true;
+  }
+
+  const normalized = rawStatus.toLowerCase();
+  const paidKeywords = ["paid", "succeeded", "success", "captured", "complete", "completed", "settled"];
+  return !paidKeywords.some((keyword) => normalized.includes(keyword));
+}

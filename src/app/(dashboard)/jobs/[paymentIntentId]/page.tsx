@@ -6,7 +6,9 @@ import { JobDeleteButton } from "@/components/job-delete-button";
 import { JobDetail } from "@/components/job-detail";
 import { JobLineItemsEditor } from "@/components/job-line-items-editor";
 import { JobStatusForm } from "@/components/job-status-form";
+import { SendInvoiceButton } from "@/components/send-invoice-button";
 import { TestEmailForm } from "@/components/test-email-form";
+import { hasOutstandingBalance } from "@/lib/job-display";
 
 interface PageProps {
   params: Promise<{ paymentIntentId: string }>;
@@ -26,6 +28,8 @@ export default async function JobDetailPage({ params }: PageProps) {
     where: { paymentIntentId, viewedAt: null },
     data: { viewedAt: new Date() },
   });
+  const outstandingBalance = hasOutstandingBalance(job);
+  const canSendInvoice = outstandingBalance && Boolean(job.customerEmail);
 
   return (
     <main className="mx-auto flex w-full max-w-5xl flex-col gap-8 px-6 py-10 text-zinc-50">
@@ -45,11 +49,33 @@ export default async function JobDetailPage({ params }: PageProps) {
       </section>
       <section className="space-y-4 rounded-2xl border border-white/10 bg-white/5 p-6 shadow-[0_20px_60px_rgba(0,0,0,0.45)]">
         <div>
-          <h2 className="text-lg font-semibold text-white">Update job status</h2>
+          <h2 className="text-lg font-semibold text-white">Billing + status</h2>
           <p className="text-sm text-zinc-400">
             Set the job to pending, printing, or completed. When a job is completed, a receipt is emailed to the
             customer.
           </p>
+        </div>
+        <div className="space-y-2 rounded-xl border border-dashed border-white/20 bg-black/30 p-4">
+          <p className="text-sm text-zinc-200">
+            Outstanding payment:{" "}
+            <span className={outstandingBalance ? "text-amber-200" : "text-emerald-200"}>
+              {outstandingBalance ? "Yes" : "No"}
+            </span>
+          </p>
+          <p className="text-xs text-zinc-400">
+            {canSendInvoice
+              ? `Send an invoice reminder to ${job.customerEmail}.`
+              : job.customerEmail
+                ? "Invoice sending is disabled because this job is already marked paid."
+                : "Invoice sending is disabled because this job has no customer email."}
+          </p>
+          <div>
+            <SendInvoiceButton
+              paymentIntentId={job.paymentIntentId}
+              customerEmail={job.customerEmail}
+              disabled={!canSendInvoice}
+            />
+          </div>
         </div>
         <JobStatusForm
           paymentIntentId={job.paymentIntentId}

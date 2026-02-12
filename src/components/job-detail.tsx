@@ -4,7 +4,7 @@ import { FulfillmentStatus as FulfillmentStatusEnum } from "@/generated/prisma/e
 import { formatCurrency, formatDate, FULFILLMENT_STATUS_LABELS } from "@/lib/format";
 import { deriveApproximatePrintTime } from "@/lib/print-time";
 import { buildBambuStudioLink, extractModelFiles } from "@/lib/model-files";
-import { getCustomerName, getPaymentMethodLabel, getPaymentStatusLabel } from "@/lib/job-display";
+import { getCustomerName, getPaymentMethodLabel, getPaymentStatusLabel, hasOutstandingBalance } from "@/lib/job-display";
 import { JobStatusBadge } from "@/components/job-status-badge";
 
 interface Props {
@@ -19,9 +19,11 @@ export function JobDetail({ job }: Props) {
   const modelFiles = extractModelFiles(job);
   const paymentMethodLabel = humanize(job.paymentMethod);
   const paymentStatusLabel = getPaymentStatusLabel(job);
+  const hasOutstandingPayment = hasOutstandingBalance(job);
+  const invoiceSentLabel = job.invoiceSentAt ? formatDate(job.invoiceSentAt) : null;
   const paymentSummary =
     paymentMethodLabel || paymentStatusLabel
-      ? [paymentMethodLabel, paymentStatusLabel].filter(Boolean).join(" • ")
+      ? [paymentMethodLabel, paymentStatusLabel].filter(Boolean).join(" | ")
       : null;
   const fulfillmentLabel = FULFILLMENT_STATUS_LABELS[job.fulfillmentStatus];
   const fulfilledTimestamp =
@@ -99,6 +101,25 @@ export function JobDetail({ job }: Props) {
           <dd className="text-white">{formatCurrency(job.totalCents, job.currency)}</dd>
         </div>
         <div>
+          <dt className="font-medium text-zinc-400">Payment balance</dt>
+          <dd className={hasOutstandingPayment ? "text-amber-200" : "text-emerald-200"}>
+            {hasOutstandingPayment ? "Outstanding" : "Paid"}
+          </dd>
+        </div>
+        <div>
+          <dt className="font-medium text-zinc-400">Last invoice email</dt>
+          <dd className="text-white">
+            {invoiceSentLabel ? (
+              <span>
+                {invoiceSentLabel}
+                {job.invoiceSendCount > 1 ? ` (${job.invoiceSendCount} sent)` : ""}
+              </span>
+            ) : (
+              "Not sent"
+            )}
+          </dd>
+        </div>
+        <div>
           <dt className="font-medium text-zinc-400">MakerWorks created</dt>
           <dd className="text-white">{formatDate(job.makerworksCreatedAt)}</dd>
         </div>
@@ -155,7 +176,7 @@ export function JobDetail({ job }: Props) {
           <p className="mt-2 text-xs text-zinc-500">
             Bambu Studio opens on the computer you&apos;re using right now (the link is handled by your browser via{" "}
             <code className="mx-1 rounded bg-black/40 px-1 py-0.5 text-[0.6rem] text-white">bambu-studio://</code>). No
-            tooling runs inside the OrderWorks container—approve any connection prompt that appears in your local slicer.
+            tooling runs inside the OrderWorks container - approve any connection prompt that appears in your local slicer.
           </p>
         </div>
       ) : null}
