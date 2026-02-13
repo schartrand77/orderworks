@@ -9,6 +9,7 @@ import { JobStatusForm } from "@/components/job-status-form";
 import { SendInvoiceButton } from "@/components/send-invoice-button";
 import { TestEmailForm } from "@/components/test-email-form";
 import { hasOutstandingBalance } from "@/lib/job-display";
+import { formatDate } from "@/lib/format";
 
 interface PageProps {
   params: Promise<{ paymentIntentId: string }>;
@@ -30,6 +31,12 @@ export default async function JobDetailPage({ params }: PageProps) {
   });
   const outstandingBalance = hasOutstandingBalance(job);
   const canSendInvoice = outstandingBalance && Boolean(job.customerEmail);
+  const receiptStatus = job.receiptSentAt
+    ? `Receipt already sent ${formatDate(job.receiptSentAt)}${job.receiptSendCount > 1 ? ` (${job.receiptSendCount} total)` : ""}.`
+    : "Receipt has not been sent yet.";
+  const invoiceStatus = job.invoiceSentAt
+    ? `Invoice already sent ${formatDate(job.invoiceSentAt)}${job.invoiceSendCount > 1 ? ` (${job.invoiceSendCount} total)` : ""}.`
+    : "Invoice has not been sent yet.";
 
   return (
     <main className="mx-auto flex w-full max-w-5xl flex-col gap-8 px-6 py-10 text-zinc-50">
@@ -56,6 +63,8 @@ export default async function JobDetailPage({ params }: PageProps) {
           </p>
         </div>
         <div className="space-y-2 rounded-xl border border-dashed border-white/20 bg-black/30 p-4">
+          <p className="text-xs text-zinc-400">{receiptStatus}</p>
+          <p className="text-xs text-zinc-400">{invoiceStatus}</p>
           <p className="text-sm text-zinc-200">
             Outstanding payment:{" "}
             <span className={outstandingBalance ? "text-amber-200" : "text-emerald-200"}>

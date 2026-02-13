@@ -39,6 +39,8 @@ model Job {
   notes            String?
   paymentMethod    String?    @map("payment_method")
   paymentStatus    String?    @map("payment_status")
+  receiptSentAt    DateTime?  @map("receipt_sent_at")
+  receiptSendCount Int        @default(0) @map("receipt_send_count")
   invoiceSentAt    DateTime?  @map("invoice_sent_at")
   invoiceSendCount Int        @default(0) @map("invoice_send_count")
   fulfillmentStatus FulfillmentStatus @default(PENDING) @map("fulfillment_status")

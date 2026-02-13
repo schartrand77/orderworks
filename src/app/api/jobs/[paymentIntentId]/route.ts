@@ -105,6 +105,14 @@ export async function PATCH(request: NextRequest, context: { params: Promise<Par
   if (shouldSendReceipt) {
     try {
       await sendReceiptEmail(updated as Job);
+      const withReceiptTracking = await prisma.job.update({
+        where: { paymentIntentId },
+        data: {
+          receiptSentAt: new Date(),
+          receiptSendCount: { increment: 1 },
+        },
+      });
+      return NextResponse.json({ job: withReceiptTracking });
     } catch (error) {
       await prisma.job.update({
         where: { paymentIntentId },

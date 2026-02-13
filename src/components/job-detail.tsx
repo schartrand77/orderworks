@@ -20,6 +20,7 @@ export function JobDetail({ job }: Props) {
   const paymentMethodLabel = humanize(job.paymentMethod);
   const paymentStatusLabel = getPaymentStatusLabel(job);
   const hasOutstandingPayment = hasOutstandingBalance(job);
+  const receiptSentLabel = job.receiptSentAt ? formatDate(job.receiptSentAt) : null;
   const invoiceSentLabel = job.invoiceSentAt ? formatDate(job.invoiceSentAt) : null;
   const paymentSummary =
     paymentMethodLabel || paymentStatusLabel
@@ -104,6 +105,19 @@ export function JobDetail({ job }: Props) {
           <dt className="font-medium text-zinc-400">Payment balance</dt>
           <dd className={hasOutstandingPayment ? "text-amber-200" : "text-emerald-200"}>
             {hasOutstandingPayment ? "Outstanding" : "Paid"}
+          </dd>
+        </div>
+        <div>
+          <dt className="font-medium text-zinc-400">Last receipt email</dt>
+          <dd className="text-white">
+            {receiptSentLabel ? (
+              <span>
+                {receiptSentLabel}
+                {job.receiptSendCount > 1 ? ` (${job.receiptSendCount} sent)` : ""}
+              </span>
+            ) : (
+              "Not sent"
+            )}
           </dd>
         </div>
         <div>
