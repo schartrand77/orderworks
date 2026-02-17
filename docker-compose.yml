@@ -23,7 +23,7 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
     command: >
-      bash -lc "npm install && npm run db:generate && npm run db:migrate && mkdir -p .next/dev/logs && npm run dev"
+      bash -lc "npm install && npm run db:generate && (npm run db:migrate || (echo 'Migrate failed; running db push for local bootstrap' && npx prisma db push --accept-data-loss)) && mkdir -p .next/dev/logs && npm run dev"
     stdin_open: true
     tty: true
 
