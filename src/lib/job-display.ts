@@ -3,8 +3,8 @@ import type { Job } from "@/generated/prisma/client";
 type JsonRecord = Record<string, unknown>;
 
 interface JobLike {
-  shipping: Job["shipping"];
-  metadata: Job["metadata"];
+  shipping?: Job["shipping"];
+  metadata?: Job["metadata"];
   customerEmail: Job["customerEmail"];
   paymentMethod: Job["paymentMethod"];
   paymentIntentId: Job["paymentIntentId"];

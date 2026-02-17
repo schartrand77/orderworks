@@ -5,7 +5,6 @@ import { ensureAdminApiAuth } from "@/lib/auth";
 import { sendReceiptEmail } from "@/lib/email";
 import { prisma } from "@/lib/prisma";
 import { jobStatusUpdateSchema, normalizeJobStatusUpdatePayload } from "@/lib/validation";
-import { syncMakerWorksJobs } from "@/lib/makerworks-sync";
 import { updateMakerWorksFulfillmentStatus } from "@/lib/makerworks-writeback";
 
 interface Params {
@@ -18,7 +17,6 @@ export async function GET(_request: NextRequest, context: { params: Promise<Para
     return unauthorized;
   }
   const { paymentIntentId } = await context.params;
-  await syncMakerWorksJobs();
 
   const job = await prisma.job.findUnique({
     where: { paymentIntentId },
@@ -37,7 +35,6 @@ export async function PATCH(request: NextRequest, context: { params: Promise<Par
     return unauthorized;
   }
   const { paymentIntentId } = await context.params;
-  await syncMakerWorksJobs();
 
   const existing = await prisma.job.findUnique({
     where: { paymentIntentId },
@@ -137,7 +134,6 @@ export async function DELETE(_request: NextRequest, context: { params: Promise<P
     return unauthorized;
   }
   const { paymentIntentId } = await context.params;
-  await syncMakerWorksJobs();
 
   const existing = await prisma.job.findUnique({
     where: { paymentIntentId },

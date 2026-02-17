@@ -14,6 +14,8 @@ export interface MakerWorksHealthPayload extends MakerWorksStatusPayload {
     makerworksTotal: number;
     lastMakerWorksUpdate: string | null;
     lastSyncAt: string | null;
+    lastSyncDurationMs?: number | null;
+    lastSyncProcessed?: number;
   };
   appUptimeSeconds: number;
 }

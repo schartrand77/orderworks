@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { ensureAdminApiAuth } from "@/lib/auth";
 import { sendInvoiceEmail } from "@/lib/email";
 import { hasOutstandingBalance } from "@/lib/job-display";
-import { syncMakerWorksJobs } from "@/lib/makerworks-sync";
 import { prisma } from "@/lib/prisma";
 
 interface Params {
@@ -15,7 +14,6 @@ export async function POST(request: NextRequest, context: { params: Promise<Para
     return unauthorized;
   }
   const { paymentIntentId } = await context.params;
-  await syncMakerWorksJobs();
 
   const job = await prisma.job.findUnique({
     where: { paymentIntentId },

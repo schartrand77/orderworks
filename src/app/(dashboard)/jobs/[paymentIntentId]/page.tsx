@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { syncMakerWorksJobs } from "@/lib/makerworks-sync";
+import { triggerMakerWorksSyncIfStale } from "@/lib/makerworks-sync";
 import { JobDeleteButton } from "@/components/job-delete-button";
 import { JobDetail } from "@/components/job-detail";
 import { JobLineItemsEditor } from "@/components/job-line-items-editor";
@@ -18,7 +18,7 @@ interface PageProps {
 export default async function JobDetailPage({ params }: PageProps) {
   const resolvedParams = await params;
   const paymentIntentId = decodeURIComponent(resolvedParams.paymentIntentId);
-  await syncMakerWorksJobs();
+  triggerMakerWorksSyncIfStale();
   const job = await prisma.job.findUnique({ where: { paymentIntentId } });
 
   if (!job) {

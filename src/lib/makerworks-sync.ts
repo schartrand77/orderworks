@@ -4,6 +4,9 @@ import { prisma } from "@/lib/prisma";
 import { getNextQueuePosition } from "@/lib/job-queue";
 
 const MIN_SYNC_INTERVAL_MS = 15_000;
+const DEFAULT_STALE_SYNC_MS = 60_000;
+const UPDATE_CHUNK_SIZE = 100;
+const INSERT_CHUNK_SIZE = 250;
 
 type MakerWorksJobRow = {
   id: string;
@@ -29,6 +32,16 @@ let inflightSync: Promise<number> | null = null;
 let lastSyncStart = 0;
 let lastSuccessfulSyncAt: Date | null = null;
 let lastMakerWorksSourceUpdatedAt: Date | null = null;
+let lastSyncDurationMs: number | null = null;
+let lastSyncProcessed = 0;
+
+function chunk<T>(items: T[], size: number) {
+  const result: T[][] = [];
+  for (let index = 0; index < items.length; index += size) {
+    result.push(items.slice(index, index + size));
+  }
+  return result;
+}
 
 export async function makerWorksJobsTableExists() {
   const [result] = await prisma.$queryRaw<{ exists: boolean }[]>(
@@ -141,10 +154,13 @@ async function fetchMakerWorksRows(hasJobFormTable: boolean, since?: Date | null
 }
 
 async function performSync() {
+  const startedAt = Date.now();
   const jobTableExists = await makerWorksJobsTableExists();
   if (!jobTableExists) {
     lastMakerWorksSourceUpdatedAt = null;
     lastSuccessfulSyncAt = new Date();
+    lastSyncDurationMs = Date.now() - startedAt;
+    lastSyncProcessed = 0;
     return 0;
   }
 
@@ -167,6 +183,8 @@ async function performSync() {
 
   if (!needsFullSync && sourceLatest && lastSynced && sourceLatest <= lastSynced) {
     lastSuccessfulSyncAt = new Date();
+    lastSyncDurationMs = Date.now() - startedAt;
+    lastSyncProcessed = 0;
     return 0;
   }
 
@@ -175,6 +193,8 @@ async function performSync() {
 
   if (rows.length === 0) {
     lastSuccessfulSyncAt = new Date();
+    lastSyncDurationMs = Date.now() - startedAt;
+    lastSyncProcessed = 0;
     return 0;
   }
 
@@ -187,27 +207,18 @@ async function performSync() {
     existing.forEach((record) => existingIds.add(record.id));
   }
 
-  let nextQueuePosition: number | null = null;
-  async function assignQueuePosition() {
-    if (nextQueuePosition === null) {
-      nextQueuePosition = await getNextQueuePosition();
-    }
-    const value = nextQueuePosition;
-    nextQueuePosition += 1;
-    return value;
-  }
-
-  let processed = 0;
+  const normalizeString = (value: string | null) => (value && value.trim().length > 0 ? value : null);
+  const toUpdate: { id: string; data: Prisma.JobUpdateInput }[] = [];
+  const toInsert: MakerWorksJobRow[] = [];
 
   for (const row of rows) {
-    const normalizeString = (value: string | null) => (value && value.trim().length > 0 ? value : null);
     const sharedData: Prisma.JobUpdateInput = {
       paymentIntentId: row.paymentIntentId,
       totalCents: row.totalCents,
       currency: row.currency,
       lineItems: row.lineItems as Prisma.InputJsonValue,
-      shipping: row.shipping === null ? Prisma.JsonNull : (row.shipping as Prisma.InputJsonValue),
-      metadata: row.metadata === null ? Prisma.JsonNull : (row.metadata as Prisma.InputJsonValue),
+      shipping: row.shipping === null ? Prisma.DbNull : (row.shipping as Prisma.InputJsonValue),
+      metadata: row.metadata === null ? Prisma.DbNull : (row.metadata as Prisma.InputJsonValue),
       userId: normalizeString(row.userId),
       customerEmail: normalizeString(row.customerEmail),
       paymentMethod: normalizeString(row.paymentMethod),
@@ -219,40 +230,63 @@ async function performSync() {
     };
 
     if (existingIds.has(row.id)) {
-      await prisma.job.update({
-        where: { id: row.id },
-        data: sharedData,
-      });
-      processed += 1;
+      toUpdate.push({ id: row.id, data: sharedData });
     } else {
-      const queuePosition = await assignQueuePosition();
-      await prisma.job.create({
-        data: {
-          id: row.id,
-          paymentIntentId: row.paymentIntentId,
-          totalCents: row.totalCents,
-          currency: row.currency,
-          lineItems: row.lineItems as Prisma.InputJsonValue,
-          shipping: row.shipping === null ? Prisma.JsonNull : (row.shipping as Prisma.InputJsonValue),
-          metadata: row.metadata === null ? Prisma.JsonNull : (row.metadata as Prisma.InputJsonValue),
-          userId: normalizeString(row.userId),
-          customerEmail: normalizeString(row.customerEmail),
-          paymentMethod: normalizeString(row.paymentMethod),
-          paymentStatus: normalizeString(row.paymentStatus),
-          fulfillmentStatus: normalizeFulfillmentStatus(row.fulfillmentStatus),
-          fulfilledAt: row.fulfilledAt ?? null,
-          makerworksCreatedAt: row.makerworksCreatedAt,
-          makerworksUpdatedAt: row.updatedAt,
-          queuePosition,
-          status: normalizeJobStatus(row.status),
-          notes: row.notes ?? null,
-        },
-      });
-      processed += 1;
+      toInsert.push(row);
     }
   }
 
+  let inserted = 0;
+  if (toInsert.length > 0) {
+    const firstQueuePosition = await getNextQueuePosition();
+    const createData: Prisma.JobCreateManyInput[] = toInsert.map((row, index) => ({
+      id: row.id,
+      paymentIntentId: row.paymentIntentId,
+      totalCents: row.totalCents,
+      currency: row.currency,
+      lineItems: row.lineItems as Prisma.InputJsonValue,
+      shipping: row.shipping === null ? Prisma.DbNull : (row.shipping as Prisma.InputJsonValue),
+      metadata: row.metadata === null ? Prisma.DbNull : (row.metadata as Prisma.InputJsonValue),
+      userId: normalizeString(row.userId),
+      customerEmail: normalizeString(row.customerEmail),
+      paymentMethod: normalizeString(row.paymentMethod),
+      paymentStatus: normalizeString(row.paymentStatus),
+      fulfillmentStatus: normalizeFulfillmentStatus(row.fulfillmentStatus),
+      fulfilledAt: row.fulfilledAt ?? null,
+      makerworksCreatedAt: row.makerworksCreatedAt,
+      makerworksUpdatedAt: row.updatedAt,
+      queuePosition: firstQueuePosition + index,
+      status: normalizeJobStatus(row.status),
+      notes: row.notes ?? null,
+    }));
+
+    for (const insertChunk of chunk(createData, INSERT_CHUNK_SIZE)) {
+      const result = await prisma.job.createMany({
+        data: insertChunk,
+        skipDuplicates: true,
+      });
+      inserted += result.count;
+    }
+  }
+
+  for (const updateChunk of chunk(toUpdate, UPDATE_CHUNK_SIZE)) {
+    await prisma.$transaction(
+      updateChunk.map((entry) =>
+        prisma.job.update({
+          where: { id: entry.id },
+          data: entry.data,
+        }),
+      ),
+    );
+  }
+
+  const processed = inserted + toUpdate.length;
   lastSuccessfulSyncAt = new Date();
+  lastSyncDurationMs = Date.now() - startedAt;
+  lastSyncProcessed = processed;
+  console.info(
+    `[makerworks-sync] durationMs=${lastSyncDurationMs} rows=${rows.length} inserted=${inserted} updated=${toUpdate.length}`,
+  );
   return processed;
 }
 
@@ -279,5 +313,24 @@ export function getMakerWorksSyncTelemetry() {
   return {
     lastSourceUpdatedAt: lastMakerWorksSourceUpdatedAt,
     lastSuccessfulSyncAt,
+    lastSyncDurationMs,
+    lastSyncProcessed,
   };
+}
+
+export function isMakerWorksSyncStale(maxAgeMs = DEFAULT_STALE_SYNC_MS) {
+  if (!lastSuccessfulSyncAt) {
+    return true;
+  }
+  return Date.now() - lastSuccessfulSyncAt.getTime() > maxAgeMs;
+}
+
+export function triggerMakerWorksSyncIfStale(maxAgeMs = DEFAULT_STALE_SYNC_MS) {
+  if (!isMakerWorksSyncStale(maxAgeMs)) {
+    return false;
+  }
+  void syncMakerWorksJobs().catch((error) => {
+    console.error("Background MakerWorks sync failed.", error);
+  });
+  return true;
 }

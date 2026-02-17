@@ -1,12 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import type { Job } from "@/generated/prisma/client";
+import type { JobStatus } from "@/generated/prisma/enums";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { formatCurrency, formatDate } from "@/lib/format";
-import { deriveApproximatePrintTime } from "@/lib/print-time";
-import { getCustomerName, getPaymentMethodLabel, getPaymentStatusLabel } from "@/lib/job-display";
+import { getPaymentMethodLabel, getPaymentStatusLabel } from "@/lib/job-display";
 import { JobQueueControls } from "@/components/job-queue-controls";
 import { SampleJobTestEmailButton } from "@/components/sample-job-test-email-button";
 import { JobStatusQuickAction } from "@/components/job-status-quick-action";
@@ -19,26 +18,26 @@ export interface SerializedJob {
   paymentIntentId: string;
   queuePosition: number;
   viewedAt: string | null;
-  metadata: Job["metadata"];
-  shipping: Job["shipping"];
-  status: Job["status"];
+  status: JobStatus;
   totalCents: number;
   currency: string;
   makerworksCreatedAt: string;
-  customerEmail: Job["customerEmail"];
-  paymentMethod: Job["paymentMethod"];
-  paymentStatus: Job["paymentStatus"];
+  customerEmail: string | null;
+  paymentMethod: string | null;
+  paymentStatus: string | null;
 }
 
 interface Props {
   jobs: SerializedJob[];
+  nextCursor?: string | null;
+  queryBase?: string;
 }
 
-async function moveJob(paymentIntentId: string, direction: "up" | "down") {
+async function moveJob(paymentIntentId: string, targetIndex: number) {
   const response = await fetch(`/api/jobs/${encodeURIComponent(paymentIntentId)}/queue`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ direction }),
+    body: JSON.stringify({ targetIndex }),
   });
 
   if (handleUnauthorizedResponse(response.status)) {
@@ -58,7 +57,7 @@ function reorderList(list: SerializedJob[], fromIndex: number, toIndex: number) 
   return next;
 }
 
-export function JobTableClient({ jobs }: Props) {
+export function JobTableClient({ jobs, nextCursor, queryBase }: Props) {
   const router = useRouter();
   const [orderedJobs, setOrderedJobs] = useState(jobs);
   const [draggingId, setDraggingId] = useState<string | null>(null);
@@ -93,11 +92,7 @@ export function JobTableClient({ jobs }: Props) {
     setIsReordering(true);
 
     try {
-      const direction = fromIndex < toIndex ? "down" : "up";
-      const steps = Math.abs(toIndex - fromIndex);
-      for (let i = 0; i < steps; i += 1) {
-        await moveJob(draggedJob.paymentIntentId, direction);
-      }
+      await moveJob(draggedJob.paymentIntentId, toIndex);
       router.refresh();
     } catch (error) {
       console.error(error);
@@ -133,7 +128,6 @@ export function JobTableClient({ jobs }: Props) {
         </thead>
         <tbody className="divide-y divide-white/5">
           {orderedJobs.map((job, index) => {
-            const printTime = deriveApproximatePrintTime(job.metadata);
             const isUnviewed = !job.viewedAt;
             const paymentStatusLabel = getPaymentStatusLabel(job);
             const isDragging = draggingId === job.id;
@@ -194,15 +188,7 @@ export function JobTableClient({ jobs }: Props) {
                 </td>
                 <td className="px-4 py-4 text-white">
                   <div className="flex flex-col gap-1">
-                    <span>{getCustomerName(job) ?? "Unknown customer"}</span>
-                    {printTime ? (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2 py-0.5 text-[0.65rem] font-semibold uppercase tracking-[0.15em] text-amber-200/90">
-                        approx.
-                        <span className="text-sm font-semibold normal-case tracking-normal text-amber-100">
-                          ~{printTime.formatted}
-                        </span>
-                      </span>
-                    ) : null}
+                    <span>{job.customerEmail ?? "Unknown customer"}</span>
                   </div>
                 </td>
                 <td className="px-4 py-4 text-zinc-200">
@@ -238,6 +224,16 @@ export function JobTableClient({ jobs }: Props) {
           })}
         </tbody>
       </table>
+      {nextCursor ? (
+        <div className="flex justify-center border-t border-white/10 p-4">
+          <Link
+            className="rounded-md border border-white/20 bg-white/5 px-4 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-zinc-100 transition hover:border-white/40 hover:bg-white/10"
+            href={`/?${queryBase ? `${queryBase}&` : ""}after=${encodeURIComponent(nextCursor)}`}
+          >
+            Next Page
+          </Link>
+        </div>
+      ) : null}
     </div>
   );
 }

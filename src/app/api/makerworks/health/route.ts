@@ -5,14 +5,14 @@ import { fetchMakerWorksStatus, CONNECTED_THRESHOLD_MINUTES } from "@/lib/makerw
 import {
   getMakerWorksSyncTelemetry,
   makerWorksJobsTableExists,
-  syncMakerWorksJobs,
+  triggerMakerWorksSyncIfStale,
 } from "@/lib/makerworks-sync";
 import type { MakerWorksHealthPayload } from "@/types/makerworks-status";
 
 export const dynamic = "force-dynamic";
 
 async function gatherHealthPayload(): Promise<MakerWorksHealthPayload> {
-  await syncMakerWorksJobs();
+  triggerMakerWorksSyncIfStale();
   const [statusPayload, orderworksTotal, makerworksTotal] = await Promise.all([
     fetchMakerWorksStatus(),
     prisma.job.count(),
@@ -38,6 +38,8 @@ async function gatherHealthPayload(): Promise<MakerWorksHealthPayload> {
         ? telemetry.lastSourceUpdatedAt.toISOString()
         : null,
       lastSyncAt: telemetry.lastSuccessfulSyncAt ? telemetry.lastSuccessfulSyncAt.toISOString() : null,
+      lastSyncDurationMs: telemetry.lastSyncDurationMs,
+      lastSyncProcessed: telemetry.lastSyncProcessed,
     },
     appUptimeSeconds: Math.round(process.uptime()),
   };

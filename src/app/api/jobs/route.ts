@@ -6,7 +6,35 @@ import { parseJobFilters } from "@/lib/job-query";
 import { manualJobSchema } from "@/lib/validation";
 import { jsonOrNull } from "@/lib/json";
 import { getNextQueuePosition } from "@/lib/job-queue";
-import { syncMakerWorksJobs } from "@/lib/makerworks-sync";
+import { triggerMakerWorksSyncIfStale } from "@/lib/makerworks-sync";
+
+const DEFAULT_PAGE_SIZE = 75;
+const MAX_PAGE_SIZE = 100;
+
+function parsePageSize(value: string | null) {
+  const parsed = Number.parseInt(value ?? "", 10);
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return DEFAULT_PAGE_SIZE;
+  }
+  return Math.min(parsed, MAX_PAGE_SIZE);
+}
+
+function parseCursor(value: string | null) {
+  if (!value) {
+    return null;
+  }
+  const [queuePositionText, ...idParts] = value.split(":");
+  const queuePosition = Number.parseInt(queuePositionText ?? "", 10);
+  const id = idParts.join(":");
+  if (!Number.isFinite(queuePosition) || !id) {
+    return null;
+  }
+  return { queuePosition, id };
+}
+
+function encodeCursor(queuePosition: number, id: string) {
+  return `${queuePosition}:${id}`;
+}
 
 export async function GET(request: NextRequest) {
   const unauthorized = ensureAdminApiAuth(request);
@@ -14,10 +42,13 @@ export async function GET(request: NextRequest) {
     return unauthorized;
   }
   try {
-    await syncMakerWorksJobs();
+    const startedAt = Date.now();
+    triggerMakerWorksSyncIfStale();
     const filters = parseJobFilters(request.nextUrl.searchParams);
+    const limit = parsePageSize(request.nextUrl.searchParams.get("limit"));
+    const cursor = parseCursor(request.nextUrl.searchParams.get("after"));
 
-    const jobs = await prisma.job.findMany({
+    const rows = await prisma.job.findMany({
       where: {
         ...(filters.statuses.length > 0 ? { status: { in: filters.statuses } } : {}),
         ...(filters.createdFrom || filters.createdTo
@@ -28,11 +59,43 @@ export async function GET(request: NextRequest) {
               },
             }
           : {}),
+        ...(cursor
+          ? {
+              OR: [
+                { queuePosition: { gt: cursor.queuePosition } },
+                { queuePosition: cursor.queuePosition, id: { gt: cursor.id } },
+              ],
+            }
+          : {}),
       },
-      orderBy: { makerworksCreatedAt: "desc" },
+      orderBy: [{ queuePosition: "asc" }, { id: "asc" }],
+      take: limit + 1,
+      select: {
+        id: true,
+        paymentIntentId: true,
+        queuePosition: true,
+        viewedAt: true,
+        status: true,
+        totalCents: true,
+        currency: true,
+        makerworksCreatedAt: true,
+        customerEmail: true,
+        paymentMethod: true,
+        paymentStatus: true,
+      },
     });
 
-    return NextResponse.json({ jobs });
+    let nextCursor: string | null = null;
+    const jobs = rows.slice(0, limit);
+    if (rows.length > limit) {
+      const last = jobs[jobs.length - 1];
+      if (last) {
+        nextCursor = encodeCursor(last.queuePosition, last.id);
+      }
+    }
+
+    console.info(`[api/jobs] method=GET durationMs=${Date.now() - startedAt} count=${jobs.length}`);
+    return NextResponse.json({ jobs, nextCursor });
   } catch (error) {
     if (error instanceof Error) {
       return NextResponse.json({ error: error.message }, { status: 400 });
@@ -56,8 +119,6 @@ export async function POST(request: NextRequest) {
   if (unauthorized) {
     return unauthorized;
   }
-  await syncMakerWorksJobs();
-
   let json: unknown;
   try {
     json = await request.json();
