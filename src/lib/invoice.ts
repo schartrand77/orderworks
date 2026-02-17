@@ -1,10 +1,10 @@
 import type { Job } from "@/generated/prisma/client";
 import { formatCurrency, formatDate } from "@/lib/format";
+import { toCustomerFacingLineItemDescription, toCustomerFacingUnitPriceCents } from "@/lib/line-item-display";
 
 type LineItemLike = {
   description?: unknown;
   quantity?: unknown;
-  unitPriceCents?: unknown;
 };
 
 function asLineItems(value: unknown): LineItemLike[] {
@@ -50,9 +50,9 @@ export function buildInvoiceEmail(job: Job) {
   const lineItemText =
     lineItems.length > 0
       ? lineItems.map((item, index) => {
-          const description = typeof item.description === "string" && item.description.trim() ? item.description.trim() : `Item ${index + 1}`;
+          const description = toCustomerFacingLineItemDescription(item.description, `Item ${index + 1}`);
           const quantity = toPositiveNumber(item.quantity);
-          const unitPriceCents = toPositiveNumber(item.unitPriceCents);
+          const unitPriceCents = toCustomerFacingUnitPriceCents(item);
           if (quantity && unitPriceCents) {
             const lineTotal = formatCurrency(Math.round(quantity * unitPriceCents), job.currency);
             return `- ${description}: ${quantity} x ${formatCurrency(Math.round(unitPriceCents), job.currency)} = ${lineTotal}`;
@@ -64,10 +64,9 @@ export function buildInvoiceEmail(job: Job) {
     lineItems.length > 0
       ? lineItems
           .map((item, index) => {
-            const description =
-              typeof item.description === "string" && item.description.trim() ? item.description.trim() : `Item ${index + 1}`;
+            const description = toCustomerFacingLineItemDescription(item.description, `Item ${index + 1}`);
             const quantity = toPositiveNumber(item.quantity);
-            const unitPriceCents = toPositiveNumber(item.unitPriceCents);
+            const unitPriceCents = toCustomerFacingUnitPriceCents(item);
             if (quantity && unitPriceCents) {
               const lineTotal = formatCurrency(Math.round(quantity * unitPriceCents), job.currency);
               return `<li>${escapeHtml(description)}: ${quantity} x ${formatCurrency(Math.round(unitPriceCents), job.currency)} = ${lineTotal}</li>`;
