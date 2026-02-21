@@ -1,191 +1,168 @@
-# Repo/App Audit: Performance, Memory, and Product Enhancements
+# Repo/App Audit: OrderWorks Hardening & Feature Roadmap
 
-Date: 2026-02-17  
-Scope: `orderworks` app (Next.js + Prisma + Postgres)
+Date: 2026-02-21  
+Scope: `orderworks` (Next.js App Router + Prisma + Postgres)
 
 ## Executive summary
 
-OrderWorks is already clean and functional, but a few architectural patterns currently create avoidable database and rendering cost:
+OrderWorks has a solid operational baseline:
+- Dashboard list pagination/projection is already implemented.
+- MakerWorks sync is chunked and deduplicated with stale-trigger behavior.
+- Job queue controls, invoice/receipt flows, and admin-gated API routes are in place.
 
-1. **Sync runs on request paths** (dashboard/API/health) which can stack expensive DB work onto user traffic.
-2. **Dashboard loads full job payloads without pagination/select narrowing**, including large JSON fields.
-3. **Queue reordering performs repeated API calls for drag-and-drop multi-position moves**, increasing write load and UI latency.
-4. **Sync path currently executes per-row writes** instead of batched writes.
-
-These are fixable without changing the product experience.
-
----
-
-## How this audit was performed
-
-- Reviewed sync, job query, and queue flow in server routes/components.
-- Reviewed data model/indexes in Prisma schema.
-- Reviewed dashboard rendering and client-side reorder logic.
-- Looked for hotspots that impact memory pressure, DB round-trips, and user-perceived latency.
+To further solidify the app for production growth, the highest-impact next steps are:
+1. **Harden admin auth/session model** (remove insecure defaults, add rate limiting, and CSRF protections).
+2. **Increase reliability around sync concurrency and data edge-cases** (advisory lock + idempotent merge guarantees).
+3. **Improve observability** (structured logs/metrics + explicit health/readiness contracts).
+4. **Add focused automated tests** for auth, queue mutations, and sync behavior.
+5. **Ship operations-oriented features** (saved views, bulk actions, shift summary).
 
 ---
 
-## Speed enhancements (highest ROI first)
+## What was reviewed
 
-### 1) Move sync off the request hot path
-
-**Current pattern:** `syncMakerWorksJobs()` is called in dashboard page load and several API endpoints.
-
-**Why it hurts:** user-facing requests inherit sync latency and DB variability.
-
-**Recommendation:**
-- Run sync in a background cadence (cron / worker / lightweight interval endpoint).
-- Keep request-time sync only as fallback (e.g., stale over threshold).
-- Return stale-but-recent data quickly and show “last synced X seconds ago”.
-
-**Expected impact:** lower p95 page/API latency and fewer timeout spikes during DB contention.
+- App routing and dashboard query flow.
+- MakerWorks synchronization logic and telemetry.
+- Admin auth/session implementation and protected API patterns.
+- Queue mutation APIs and UX implications.
+- Existing docs and runtime scripts.
 
 ---
 
-### 2) Add pagination + projection for dashboard lists
+## Technical enhancement opportunities
 
-**Current pattern:** `findMany` returns full job rows, and server serializes broad payloads into client table.
+### 1) Authentication and session hardening (highest priority)
 
-**Why it hurts:** JSON-heavy columns (`lineItems`, `metadata`, `shipping`) inflate response size and server memory.
+**Findings**
+- Session token is deterministic from admin credentials + secret, and valid until cookie expiry.
+- `ADMIN_SESSION_SECRET` currently has a permissive fallback value.
+- Login endpoint has no obvious request throttling.
 
-**Recommendation:**
-- Add cursor pagination (e.g., 50–100 rows/page).
-- Use `select` for list endpoints/pages; fetch only columns rendered in table.
-- Keep full JSON only on job detail page.
+**Enhancements**
+- Require `ADMIN_SESSION_SECRET` explicitly at startup (fail fast if missing).
+- Rotate to signed sessions with issuance timestamp and rolling expiration.
+- Add rate limiting (IP + username key) to `/api/auth/login`.
+- Add CSRF protection for state-changing routes (double-submit cookie or token header).
+- Add optional audit log entries for auth success/fail/logout.
 
-**Expected impact:** substantial reduction in memory, transfer size, and render time on large queues.
-
----
-
-### 3) Replace stepwise reorder API calls with single “move-to-index” mutation
-
-**Current pattern:** drag-and-drop computes distance and loops N times calling `/queue` with up/down.
-
-**Why it hurts:** O(distance) network + DB writes for one user action.
-
-**Recommendation:**
-- Add one endpoint accepting `{ paymentIntentId, targetIndex }`.
-- Update queue positions in one transaction using set-based SQL.
-
-**Expected impact:** faster reorder UX, far fewer writes, lower lock contention.
+**Why this matters**
+- Reduces brute-force and replay risk.
+- Aligns the app with expected baseline controls for internal operations tooling.
 
 ---
 
-### 4) Batch sync writes
+### 2) Sync reliability + correctness under concurrency
 
-**Current pattern:** sync loops through rows and performs per-row update/create.
+**Findings**
+- Sync currently chunks inserts/updates and tracks telemetry in-memory.
+- Sync can be triggered from request paths when stale.
 
-**Why it hurts:** high DB round-trip overhead during larger deltas.
+**Enhancements**
+- Use Postgres advisory lock to guarantee single sync runner across multi-instance deployments.
+- Persist sync checkpoints/telemetry in DB table (not only process memory).
+- Add explicit dead-letter/error capture for malformed source rows (with retry policy).
+- Add periodic full-reconciliation mode (e.g., nightly) to catch missed deltas.
 
-**Recommendation:**
-- Use `createMany` for inserts where possible.
-- For updates, batch by chunks and/or use SQL upsert pattern where practical.
-- Keep queue assignment deterministic for new records.
-
-**Expected impact:** significantly faster sync for bursts and lower CPU usage.
-
----
-
-### 5) Add/validate supporting DB indexes for dominant sort/filter patterns
-
-**Current pattern:** single-column indexes exist for status, created-at, queuePosition.
-
-**Recommendation:**
-- Add composite indexes aligned to common queries, such as:
-  - `(queue_position ASC, makerworks_created_at DESC)`
-  - `(makerworks_updated_at DESC)`
-  - `(status, makerworks_created_at DESC)` if status-filtered views are common.
-- Verify with `EXPLAIN ANALYZE` before/after.
-
-**Expected impact:** lower sort cost and better planner choices at scale.
+**Why this matters**
+- Prevents race conditions in horizontally scaled hosting.
+- Makes sync status visible across restarts and deploys.
 
 ---
 
-## Memory enhancements
+### 3) Observability and operability
 
-### 1) Don’t hydrate large JSON blobs in list views
+**Findings**
+- Console telemetry exists for sync duration/row counts.
+- MakerWorks status route provides connection signal.
 
-- Exclude `lineItems`, `metadata`, `shipping` from dashboard query.
-- If an approximate print-time hint is needed, persist a compact derived field (e.g., `estimatedPrintMinutes`) at sync time.
+**Enhancements**
+- Adopt structured logging (`requestId`, `route`, `durationMs`, `jobId/paymentIntentId`).
+- Add `/api/health` (liveness) and `/api/ready` (DB + source-readiness checks) split.
+- Expose minimal internal metrics (sync rows/sec, queue mutation latency, login failures).
+- Add alert thresholds: sync lag, consecutive sync failures, and slow query counts.
 
-### 2) Reduce duplicated in-memory collections during sync
-
-- Current sync builds arrays/maps/sets (`rows`, `existingIds`) for all changed jobs.
-- Process in chunks (e.g., 500 rows) to cap peak memory use.
-
-### 3) Avoid serializing unnecessary fields server→client
-
-- Narrow `SerializedJob` payload for table-only usage.
-- Keep detail-only fields in detail route.
-
-### 4) Add payload size guardrails
-
-- For manual job creation/update APIs, enforce practical max JSON/body sizes and reject pathological payloads.
+**Why this matters**
+- Faster incident triage and safer on-call support.
+- Cleaner separation between “process alive” and “app ready.”
 
 ---
 
-## Reliability/observability upgrades (performance-adjacent)
+### 4) Data lifecycle and performance guardrails
 
-1. Add sync metrics: rows scanned, rows inserted/updated, duration, and error count.
-2. Add endpoint-level timing logs for key API routes.
-3. Add DB statement timeout for sync and queue writes to avoid long-tail hangs.
-4. Add “sync lag” alerting (source latest update vs last successful sync).
+**Enhancements**
+- Introduce retention/archive strategy for completed jobs older than N days.
+- Add materialized summary table for dashboard counters and aging metrics.
+- Add DB constraints for queue-position integrity and status transitions.
+- Validate high-value indexes with regular `EXPLAIN ANALYZE` snapshots in docs.
 
----
-
-## Suggested new features (product roadmap)
-
-### Operations features
-
-1. **Saved filter presets** (e.g., “Today + Pending/Printing”).
-2. **Bulk actions** (mark selected jobs READY/COMPLETED, send invoices in batch).
-3. **SLA aging indicators** (time since created + threshold color coding).
-4. **Queue groups by printer/material** for parallel workflow lanes.
-
-### Customer/admin communication
-
-1. **Templated status notifications** (ready for pickup, shipped, delayed).
-2. **Email delivery activity timeline** per job (attempts, response codes).
-3. **Internal notes history** with audit trail (who changed what/when).
-
-### Throughput planning
-
-1. **Estimated completion forecast** from queue + print-time estimates.
-2. **Capacity dashboard** (jobs/day, avg turnaround, overdue count).
-3. **“What changed” panel** highlighting newly synced/updated jobs since last shift.
-
-### Integrations
-
-1. **Webhook/event stream out** for StockWorks/other tools (job status + fulfillment changes).
-2. **CSV export/import for queue operations**.
-3. **Optional barcode/QR scanning** at pickup to mark fulfillment quickly.
+**Why this matters**
+- Keeps primary table lean as historical data grows.
+- Prevents subtle drift in queue ordering and workflow state.
 
 ---
 
-## Implementation plan (phased)
+### 5) Automated test coverage and release confidence
 
-### Phase 1 (quick wins, low risk)
-- Add dashboard pagination + select projection.
-- Implement single-call queue move endpoint.
-- Add sync and API timing metrics.
+**Findings**
+- Repository currently exposes lint/build scripts but no dedicated test suite script.
 
-### Phase 2 (medium effort)
-- Move sync to scheduled/background execution.
-- Chunked/batched sync writes.
-- Add composite indexes validated with query plans.
+**Enhancements**
+- Add unit tests for auth helpers (session token validation, secret requirement, safe compare edge-cases).
+- Add integration tests for queue mutation semantics and authorization behavior.
+- Add sync tests for insert/update/chunk boundaries and stale-trigger behavior.
+- Add a minimal CI workflow: `lint` + `build` + tests on PR.
 
-### Phase 3 (feature leverage)
-- Bulk actions + saved views.
-- SLA/capacity analytics.
-- Notification templates + audit history.
+**Why this matters**
+- Prevents regressions in the most business-critical flows.
+- Supports faster, safer iteration as features are added.
+
+---
+
+## Product features to solidify daily operations
+
+### Near-term (high utility, moderate scope)
+1. **Saved filter views** (per-user or global presets such as “Today/Pending/Printing”).
+2. **Bulk actions** (set fulfillment/status, send invoices, mark viewed).
+3. **Shift handoff summary** (new jobs, completed jobs, exceptions since last shift).
+4. **Exception queue** (payment mismatch, missing model files, failed email notifications).
+
+### Mid-term (throughput + planning)
+1. **Capacity forecasting** from print-time estimates + queue shape.
+2. **SLA/aging dashboard** with configurable thresholds and breach highlights.
+3. **Timeline/audit trail** for job updates (status, notes, invoice, receipt events).
+
+### Longer-term integrations
+1. **Outbound webhooks** for StockWorks/other systems on key status transitions.
+2. **Barcode/QR pickup workflow** for faster fulfillment confirmation.
+3. **CSV export/import utilities** for bulk operational edits.
+
+---
+
+## Suggested phased plan
+
+### Phase 1 (1–2 sprints)
+- Enforce required `ADMIN_SESSION_SECRET`.
+- Add login rate limiting + CSRF on mutating routes.
+- Add structured logging scaffold + request IDs.
+- Add initial unit tests for auth and queue APIs.
+
+### Phase 2 (2–3 sprints)
+- Advisory-lock sync runner + persisted sync telemetry table.
+- Readiness endpoint and alertable sync lag metrics.
+- Bulk actions and saved views.
+
+### Phase 3 (ongoing)
+- Capacity/SLA analytics.
+- Shift summary and event/audit timeline.
+- Integration webhooks and operational exports.
 
 ---
 
 ## Success metrics to track
 
-- Dashboard p95 response time.
-- Sync duration and rows/sec.
-- DB query count per dashboard load.
-- Reorder operation latency (drag-drop action to persisted state).
-- Process RSS during large sync.
+- Login failure rate + lockout/rate-limit trigger count.
+- Dashboard and queue mutation p95 latency.
+- Sync lag (`source max updatedAt` vs `last successful sync`).
+- Consecutive sync failure count.
+- Time-to-resolution for operations incidents.
 
