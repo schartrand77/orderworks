@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import type { ManualJobPayload } from "@/lib/validation";
 import { FULFILLMENT_OPTIONS, type FulfillmentQueryValue } from "@/lib/format";
-import { handleUnauthorizedResponse } from "@/lib/client-auth";
+import { buildCsrfHeaders, handleUnauthorizedResponse } from "@/lib/client-auth";
 import { useNotifications } from "@/components/notifications-provider";
 
 interface LineItemInput {
@@ -212,7 +212,7 @@ export function ManualJobForm({ isOpen, onClose }: ManualJobFormProps) {
 
       const response = await fetch("/api/jobs", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: buildCsrfHeaders({ "Content-Type": "application/json" }),
         body: JSON.stringify(payload),
       });
 

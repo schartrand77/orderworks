@@ -9,7 +9,8 @@ import { getPaymentMethodLabel, getPaymentStatusLabel } from "@/lib/job-display"
 import { JobQueueControls } from "@/components/job-queue-controls";
 import { SampleJobTestEmailButton } from "@/components/sample-job-test-email-button";
 import { JobStatusQuickAction } from "@/components/job-status-quick-action";
-import { handleUnauthorizedResponse } from "@/lib/client-auth";
+import { useNotifications } from "@/components/notifications-provider";
+import { buildCsrfHeaders, handleUnauthorizedResponse } from "@/lib/client-auth";
 
 const SAMPLE_JOB_ID = "makerworks-sample-job";
 
@@ -36,7 +37,7 @@ interface Props {
 async function moveJob(paymentIntentId: string, targetIndex: number) {
   const response = await fetch(`/api/jobs/${encodeURIComponent(paymentIntentId)}/queue`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: buildCsrfHeaders({ "Content-Type": "application/json" }),
     body: JSON.stringify({ targetIndex }),
   });
 
@@ -59,13 +60,18 @@ function reorderList(list: SerializedJob[], fromIndex: number, toIndex: number) 
 
 export function JobTableClient({ jobs, nextCursor, queryBase }: Props) {
   const router = useRouter();
+  const { notify } = useNotifications();
   const [orderedJobs, setOrderedJobs] = useState(jobs);
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [dragOverId, setDragOverId] = useState<string | null>(null);
   const [isReordering, setIsReordering] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [bulkAction, setBulkAction] = useState("status:pending");
+  const [isApplyingBulkAction, setIsApplyingBulkAction] = useState(false);
 
   useEffect(() => {
     setOrderedJobs(jobs);
+    setSelectedIds([]);
   }, [jobs]);
 
   const jobIndexLookup = useMemo(() => {
@@ -113,11 +119,119 @@ export function JobTableClient({ jobs, nextCursor, queryBase }: Props) {
     );
   }
 
+  const selectedCount = selectedIds.length;
+
+  async function applyBulkAction() {
+    if (selectedIds.length === 0 || isApplyingBulkAction) {
+      return;
+    }
+
+    let payload: Record<string, unknown> = {
+      paymentIntentIds: selectedIds,
+    };
+
+    if (bulkAction.startsWith("status:")) {
+      payload = {
+        ...payload,
+        action: "set_status",
+        status: bulkAction.replace("status:", ""),
+      };
+    } else if (bulkAction.startsWith("fulfillment:")) {
+      payload = {
+        ...payload,
+        action: "set_fulfillment",
+        fulfillmentStatus: bulkAction.replace("fulfillment:", ""),
+      };
+    } else if (bulkAction === "send_invoices") {
+      payload = { ...payload, action: "send_invoices" };
+    } else {
+      payload = { ...payload, action: "mark_viewed" };
+    }
+
+    setIsApplyingBulkAction(true);
+    try {
+      const response = await fetch("/api/jobs/bulk", {
+        method: "POST",
+        headers: buildCsrfHeaders({ "Content-Type": "application/json" }),
+        body: JSON.stringify(payload),
+      });
+
+      if (handleUnauthorizedResponse(response.status)) {
+        return;
+      }
+
+      const body = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(body.error ?? "Bulk action failed");
+      }
+
+      const message =
+        bulkAction === "send_invoices"
+          ? `Invoices: sent ${body.sent ?? 0}, skipped ${body.skipped ?? 0}, failed ${(body.failed as unknown[] | undefined)?.length ?? 0}.`
+          : `Bulk action completed for ${selectedIds.length} jobs.`;
+      notify({ type: "success", message });
+      setSelectedIds([]);
+      router.refresh();
+    } catch (error) {
+      notify({
+        type: "error",
+        message: error instanceof Error ? error.message : "Bulk action failed",
+      });
+    } finally {
+      setIsApplyingBulkAction(false);
+    }
+  }
+
   return (
-    <div className="overflow-x-auto rounded-2xl border border-white/10 bg-[#070707]/90 shadow-[0_30px_80px_rgba(0,0,0,0.65)]">
+    <div className="space-y-3">
+      <div className="flex flex-wrap items-center gap-3 rounded-xl border border-white/10 bg-white/5 p-3">
+        <span className="text-xs font-semibold uppercase tracking-[0.14em] text-zinc-400">
+          {selectedCount} selected
+        </span>
+        <select
+          value={bulkAction}
+          onChange={(event) => setBulkAction(event.target.value)}
+          className="rounded-md border border-white/10 bg-[#080808] px-3 py-2 text-sm text-zinc-100 outline-none transition focus:border-white/40"
+        >
+          <option value="status:pending">Set status: Pending</option>
+          <option value="status:printing">Set status: Printing</option>
+          <option value="status:completed">Set status: Completed</option>
+          <option value="fulfillment:pending">Set fulfillment: Pending</option>
+          <option value="fulfillment:ready">Set fulfillment: Ready</option>
+          <option value="fulfillment:shipped">Set fulfillment: Shipped</option>
+          <option value="fulfillment:picked_up">Set fulfillment: Picked up</option>
+          <option value="send_invoices">Send invoices</option>
+          <option value="mark_viewed">Mark viewed</option>
+        </select>
+        <button
+          type="button"
+          onClick={() => {
+            void applyBulkAction();
+          }}
+          disabled={selectedCount === 0 || isApplyingBulkAction}
+          className="rounded-md border border-white/15 bg-white/10 px-4 py-2 text-sm font-semibold text-white transition hover:border-white/40 hover:bg-white/20 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {isApplyingBulkAction ? "Applying..." : "Apply bulk action"}
+        </button>
+      </div>
+      <div className="overflow-x-auto rounded-2xl border border-white/10 bg-[#070707]/90 shadow-[0_30px_80px_rgba(0,0,0,0.65)]">
       <table className="min-w-full divide-y divide-white/10 text-left text-sm text-zinc-100">
         <thead className="bg-white/5 text-xs uppercase tracking-[0.25em] text-zinc-400">
           <tr>
+            <th className="px-4 py-3 font-medium">
+              <input
+                type="checkbox"
+                checked={orderedJobs.length > 0 && selectedIds.length === orderedJobs.length}
+                onChange={(event) => {
+                  if (event.currentTarget.checked) {
+                    setSelectedIds(orderedJobs.map((job) => job.paymentIntentId));
+                  } else {
+                    setSelectedIds([]);
+                  }
+                }}
+                aria-label="Select all jobs"
+              />
+            </th>
             <th className="px-4 py-3 font-medium">Queue</th>
             <th className="px-4 py-3 font-medium">Customer</th>
             <th className="px-4 py-3 font-medium">Payment</th>
@@ -164,6 +278,20 @@ export function JobTableClient({ jobs, nextCursor, queryBase }: Props) {
                   isUnviewed ? "bg-amber-500/10 hover:bg-amber-500/20" : "hover:bg-white/5"
                 } ${isDragging ? "opacity-60" : ""} ${isOver ? "ring-1 ring-white/30" : ""}`}
               >
+                <td className="px-4 py-4">
+                  <input
+                    type="checkbox"
+                    checked={selectedIds.includes(job.paymentIntentId)}
+                    onChange={(event) => {
+                      if (event.currentTarget.checked) {
+                        setSelectedIds((current) => [...current, job.paymentIntentId]);
+                      } else {
+                        setSelectedIds((current) => current.filter((id) => id !== job.paymentIntentId));
+                      }
+                    }}
+                    aria-label={`Select ${job.paymentIntentId}`}
+                  />
+                </td>
                 <td className="px-4 py-4">
                   <div className="flex items-center gap-3">
                     <JobQueueControls
@@ -234,6 +362,7 @@ export function JobTableClient({ jobs, nextCursor, queryBase }: Props) {
           </Link>
         </div>
       ) : null}
+      </div>
     </div>
   );
 }

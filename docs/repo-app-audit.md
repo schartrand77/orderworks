@@ -95,6 +95,15 @@ To further solidify the app for production growth, the highest-impact next steps
 - Add DB constraints for queue-position integrity and status transitions.
 - Validate high-value indexes with regular `EXPLAIN ANALYZE` snapshots in docs.
 
+**EXPLAIN ANALYZE snapshot cadence**
+- Capture snapshots monthly and after any index/query change.
+- Store snapshots in `docs/explain-analyze-snapshots.md` with date, environment, and row counts.
+- Suggested high-value queries:
+  1. Dashboard list query ordered by `queue_position, id` with status/date filters.
+  2. Job detail lookup by `payment_intent_id`.
+  3. Queue reorder segment update path.
+  4. MakerWorks sync delta query by source `updatedAt`.
+
 **Why this matters**
 - Keeps primary table lean as historical data grows.
 - Prevents subtle drift in queue ordering and workflow state.

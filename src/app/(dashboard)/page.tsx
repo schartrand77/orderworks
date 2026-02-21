@@ -1,8 +1,11 @@
 import { Suspense } from "react";
+import Link from "next/link";
 import type { JobStatus } from "@/generated/prisma/enums";
 import { prisma } from "@/lib/prisma";
 import { parseJobFilters } from "@/lib/job-query";
 import { triggerMakerWorksSyncIfStale } from "@/lib/makerworks-sync";
+import { triggerMaintenanceIfDue, triggerSummaryRefreshIfStale } from "@/lib/job-maintenance";
+import { classifyJobExceptions } from "@/lib/job-exceptions";
 import { JobFilters } from "@/components/job-filters";
 import { JobTable } from "@/components/job-table";
 
@@ -15,6 +18,7 @@ interface SearchParams {
   status?: string | string[];
   createdFrom?: string | string[];
   createdTo?: string | string[];
+  queue?: string | string[];
 }
 
 function toURLSearchParams(searchParams?: SearchParams) {
@@ -77,6 +81,8 @@ async function JobsSection({ searchParams }: { searchParams?: Promise<SearchPara
   const limit = parsePageSize(extractSingle(resolvedSearchParams?.limit));
   const cursorValue = extractSingle(resolvedSearchParams?.after);
   const cursor = parseCursor(cursorValue);
+  const queueMode = extractSingle(resolvedSearchParams?.queue);
+  const isExceptionQueueMode = queueMode === "exceptions";
   let jobs: {
     id: string;
     paymentIntentId: string;
@@ -103,6 +109,8 @@ async function JobsSection({ searchParams }: { searchParams?: Promise<SearchPara
 
   try {
     triggerMakerWorksSyncIfStale();
+    void triggerMaintenanceIfDue();
+    void triggerSummaryRefreshIfStale();
 
     const rows = await prisma.job.findMany({
       where: {
@@ -115,7 +123,7 @@ async function JobsSection({ searchParams }: { searchParams?: Promise<SearchPara
               },
             }
           : {}),
-        ...(cursor
+        ...(!isExceptionQueueMode && cursor
           ? {
               OR: [
                 { queuePosition: { gt: cursor.queuePosition } },
@@ -128,7 +136,7 @@ async function JobsSection({ searchParams }: { searchParams?: Promise<SearchPara
         { queuePosition: "asc" },
         { id: "asc" },
       ],
-      take: limit + 1,
+      take: isExceptionQueueMode ? Math.max(limit * 6, 300) : limit + 1,
       select: {
         id: true,
         paymentIntentId: true,
@@ -141,17 +149,26 @@ async function JobsSection({ searchParams }: { searchParams?: Promise<SearchPara
         customerEmail: true,
         paymentMethod: true,
         paymentStatus: true,
+        metadata: true,
+        lineItems: true,
+        notes: true,
+        receiptSentAt: true,
+        updatedAt: true,
       },
     });
 
-    if (rows.length > limit) {
-      const next = rows[limit - 1];
+    const filteredRows = isExceptionQueueMode
+      ? rows.filter((job) => classifyJobExceptions(job).length > 0)
+      : rows;
+
+    if (!isExceptionQueueMode && filteredRows.length > limit) {
+      const next = filteredRows[limit - 1];
       if (next) {
         nextCursor = encodeCursor(next.queuePosition, next.id);
       }
-      jobs = rows.slice(0, limit);
+      jobs = filteredRows.slice(0, limit);
     } else {
-      jobs = rows;
+      jobs = filteredRows.slice(0, limit);
     }
   } catch (cause) {
     if (!error) {
@@ -163,13 +180,38 @@ async function JobsSection({ searchParams }: { searchParams?: Promise<SearchPara
   const statusValue = extractSingle(resolvedSearchParams?.status);
   const createdFromValue = extractSingle(resolvedSearchParams?.createdFrom);
   const createdToValue = extractSingle(resolvedSearchParams?.createdTo);
+  const queueValue = extractSingle(resolvedSearchParams?.queue);
+  const todayIso = new Date().toISOString().slice(0, 10);
   const queryBase = new URLSearchParams(params);
   queryBase.delete("after");
   queryBase.set("limit", String(limit));
 
   return (
     <div className="space-y-6">
-      <JobFilters status={statusValue} createdFrom={createdFromValue} createdTo={createdToValue} />
+      <section className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-white/10 bg-white/5 px-4 py-3">
+        <p className="text-sm text-zinc-300">Primary queue view. Use Ops or Insights for secondary workflows.</p>
+        <div className="flex items-center gap-2">
+          <Link
+            href="/ops"
+            className="rounded-md border border-white/15 bg-white/10 px-3 py-1.5 text-xs font-semibold text-white transition hover:border-white/40 hover:bg-white/20"
+          >
+            Open Ops
+          </Link>
+          <Link
+            href="/insights"
+            className="rounded-md border border-white/15 bg-white/10 px-3 py-1.5 text-xs font-semibold text-white transition hover:border-white/40 hover:bg-white/20"
+          >
+            Open Insights
+          </Link>
+        </div>
+      </section>
+      <JobFilters
+        status={statusValue}
+        createdFrom={createdFromValue}
+        createdTo={createdToValue}
+        queue={queueValue}
+        todayIso={todayIso}
+      />
       {error ? (
         <div className="rounded-md border border-red-400/50 bg-red-500/10 p-4 text-sm text-red-100">{error}</div>
       ) : null}

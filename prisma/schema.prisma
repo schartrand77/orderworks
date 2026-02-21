@@ -55,3 +55,87 @@ model Job {
   @@index([makerworksCreatedAt])
   @@index([queuePosition])
 }
+
+model ArchivedJob {
+  id                 String            @id
+  paymentIntentId    String            @unique @map("payment_intent_id")
+  totalCents         Int               @map("total_cents")
+  currency           String
+  lineItems          Json              @map("line_items")
+  shipping           Json?
+  metadata           Json?
+  userId             String?           @map("user_id")
+  customerEmail      String?           @map("customer_email")
+  makerworksCreatedAt DateTime         @map("makerworks_created_at")
+  makerworksUpdatedAt DateTime         @map("makerworks_updated_at")
+  status             JobStatus
+  notes              String?
+  paymentMethod      String?           @map("payment_method")
+  paymentStatus      String?           @map("payment_status")
+  receiptSentAt      DateTime?         @map("receipt_sent_at")
+  receiptSendCount   Int               @default(0) @map("receipt_send_count")
+  invoiceSentAt      DateTime?         @map("invoice_sent_at")
+  invoiceSendCount   Int               @default(0) @map("invoice_send_count")
+  fulfillmentStatus  FulfillmentStatus @map("fulfillment_status")
+  fulfilledAt        DateTime?         @map("fulfilled_at")
+  queuePosition      Int               @map("queue_position")
+  viewedAt           DateTime?         @map("viewed_at")
+  originalCreatedAt  DateTime          @map("original_created_at")
+  originalUpdatedAt  DateTime          @map("original_updated_at")
+  archivedAt         DateTime          @default(now()) @map("archived_at")
+
+  @@index([archivedAt])
+  @@index([status])
+  @@index([makerworksCreatedAt])
+  @@map("archived_jobs")
+}
+
+model MakerWorksSyncState {
+  singletonKey         String    @id @default("default") @map("singleton_key")
+  lastSourceUpdatedAt  DateTime? @map("last_source_updated_at")
+  lastSuccessfulSyncAt DateTime? @map("last_successful_sync_at")
+  lastSyncStartedAt    DateTime? @map("last_sync_started_at")
+  lastSyncDurationMs   Int?      @map("last_sync_duration_ms")
+  lastSyncProcessed    Int       @default(0) @map("last_sync_processed")
+  lastRunMode          String?   @map("last_run_mode")
+  lastFullReconcileAt  DateTime? @map("last_full_reconcile_at")
+  lastError            String?   @map("last_error")
+  consecutiveFailures  Int       @default(0) @map("consecutive_failures")
+  lastSlowQueryCount   Int       @default(0) @map("last_slow_query_count")
+  slowQueryCountTotal  Int       @default(0) @map("slow_query_count_total")
+  createdAt            DateTime  @default(now()) @map("created_at")
+  updatedAt            DateTime  @updatedAt @map("updated_at")
+
+  @@map("makerworks_sync_state")
+}
+
+model MakerWorksSyncDeadLetter {
+  id              BigInt    @id @default(autoincrement())
+  sourceJobId     String    @unique @map("source_job_id")
+  paymentIntentId String? @map("payment_intent_id")
+  payload         Json
+  errorMessage    String    @map("error_message")
+  retryCount      Int       @default(0) @map("retry_count")
+  nextRetryAt     DateTime  @default(now()) @map("next_retry_at")
+  lastFailedAt    DateTime  @default(now()) @map("last_failed_at")
+  resolvedAt      DateTime? @map("resolved_at")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  @@index([resolvedAt, nextRetryAt], map: "makerworks_sync_dead_letter_unresolved_next_retry_idx")
+  @@map("makerworks_sync_dead_letter")
+}
+
+model InternalMetricsState {
+  singletonKey               String   @id @default("default") @map("singleton_key")
+  loginFailuresTotal         Int      @default(0) @map("login_failures_total")
+  queueMutationTotal         Int      @default(0) @map("queue_mutation_total")
+  queueMutationDurationMsSum BigInt   @default(0) @map("queue_mutation_duration_ms_sum")
+  queueMutationDurationMsMax Int      @default(0) @map("queue_mutation_duration_ms_max")
+  syncRowsTotal              BigInt   @default(0) @map("sync_rows_total")
+  syncDurationMsTotal        BigInt   @default(0) @map("sync_duration_ms_total")
+  createdAt                  DateTime @default(now()) @map("created_at")
+  updatedAt                  DateTime @updatedAt @map("updated_at")
+
+  @@map("internal_metrics_state")
+}

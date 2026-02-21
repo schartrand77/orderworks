@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useNotifications } from "@/components/notifications-provider";
-import { handleUnauthorizedResponse } from "@/lib/client-auth";
+import { buildCsrfHeaders, handleUnauthorizedResponse } from "@/lib/client-auth";
 
 interface Props {
   paymentIntentId: string;
@@ -31,6 +31,7 @@ export function JobDeleteButton({ paymentIntentId, jobId }: Props) {
     try {
       const response = await fetch(`/api/jobs/${encodeURIComponent(paymentIntentId)}`, {
         method: "DELETE",
+        headers: buildCsrfHeaders(),
       });
       if (handleUnauthorizedResponse(response.status)) {
         return;

@@ -8,7 +8,9 @@ export interface ModelFile {
   label: string;
 }
 
-export function extractModelFiles(job: Job): ModelFile[] {
+type JobModelFileInput = Pick<Job, "metadata" | "lineItems" | "notes">;
+
+export function extractModelFiles(job: JobModelFileInput): ModelFile[] {
   const sources: Array<{ value: unknown; label?: string }> = [
     { value: job.metadata ?? null },
     { value: job.lineItems ?? null, label: "Line items" },

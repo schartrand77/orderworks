@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { buildCsrfHeaders } from "@/lib/client-auth";
 
 export function LogoutButton() {
   const router = useRouter();
@@ -10,7 +11,7 @@ export function LogoutButton() {
   async function handleLogout() {
     setIsSubmitting(true);
     try {
-      await fetch("/api/auth/logout", { method: "POST" });
+      await fetch("/api/auth/logout", { method: "POST", headers: buildCsrfHeaders() });
       router.push("/login");
       router.refresh();
     } finally {

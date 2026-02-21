@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { LogoutButton } from "@/components/logout-button";
 import { readAdminSessionTokenFromHeaders, validateAdminSessionToken } from "@/lib/auth";
@@ -19,9 +20,26 @@ export default async function DashboardLayout({ children }: { children: ReactNod
           <div className="flex flex-wrap items-center justify-between gap-3">
             <p className="text-2xl font-semibold tracking-wide text-zinc-50">OrderWorks Admin</p>
             <div className="flex items-center gap-3">
-              <span className="rounded-full border border-white/10 px-3 py-1 text-xs font-medium text-zinc-300">
-                Jobs dashboard
-              </span>
+              <nav className="flex flex-wrap items-center gap-2">
+                <Link
+                  href="/"
+                  className="rounded-full border border-white/10 px-3 py-1 text-xs font-medium text-zinc-300 transition hover:border-white/30 hover:text-white"
+                >
+                  Queue
+                </Link>
+                <Link
+                  href="/ops"
+                  className="rounded-full border border-white/10 px-3 py-1 text-xs font-medium text-zinc-300 transition hover:border-white/30 hover:text-white"
+                >
+                  Ops
+                </Link>
+                <Link
+                  href="/insights"
+                  className="rounded-full border border-white/10 px-3 py-1 text-xs font-medium text-zinc-300 transition hover:border-white/30 hover:text-white"
+                >
+                  Insights
+                </Link>
+              </nav>
               <LogoutButton />
             </div>
           </div>

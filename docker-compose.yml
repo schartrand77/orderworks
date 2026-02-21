@@ -8,7 +8,7 @@ services:
       DATABASE_URL: ${DOCKER_DATABASE_URL:-postgresql://postgres:postgres@host.docker.internal:5432/makerworks?schema=orderworks}
       ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-dev-password}
-      ADMIN_SESSION_SECRET: ${ADMIN_SESSION_SECRET:-dev-session-secret}
+      ADMIN_SESSION_SECRET: ${ADMIN_SESSION_SECRET}
       NEXT_TELEMETRY_DISABLED: "1"
       NODE_ENV: development
       PORT: "3000"

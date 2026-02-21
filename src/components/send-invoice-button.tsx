@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useNotifications } from "@/components/notifications-provider";
-import { handleUnauthorizedResponse } from "@/lib/client-auth";
+import { buildCsrfHeaders, handleUnauthorizedResponse } from "@/lib/client-auth";
 
 interface Props {
   paymentIntentId: string;
@@ -25,6 +25,7 @@ export function SendInvoiceButton({ paymentIntentId, customerEmail, disabled = f
     try {
       const response = await fetch(`/api/jobs/${encodeURIComponent(paymentIntentId)}/invoice`, {
         method: "POST",
+        headers: buildCsrfHeaders(),
       });
       if (handleUnauthorizedResponse(response.status)) {
         return;

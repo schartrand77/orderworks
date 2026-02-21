@@ -27,7 +27,7 @@ async function gatherHealthPayload(): Promise<MakerWorksHealthPayload> {
       return result[0]?.total ?? 0;
     })(),
   ]);
-  const telemetry = getMakerWorksSyncTelemetry();
+  const telemetry = await getMakerWorksSyncTelemetry();
 
   return {
     ...statusPayload,
