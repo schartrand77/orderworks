@@ -75,7 +75,7 @@ export async function archiveCompletedJobs() {
 
 export async function refreshDashboardSummary() {
   try {
-    await prisma.$queryRaw(Prisma.sql`SELECT orderworks."refresh_job_dashboard_summary"()`);
+    await prisma.$executeRaw(Prisma.sql`SELECT orderworks."refresh_job_dashboard_summary"()`);
     lastSummaryRefreshAt = Date.now();
     return true;
   } catch (error) {
