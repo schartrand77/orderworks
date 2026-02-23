@@ -8,66 +8,19 @@ import {
 } from "@/lib/auth";
 import { incrementLoginFailures } from "@/lib/internal-metrics";
 import { getRequestId, logStructured } from "@/lib/observability";
+import { clearRateLimit, getRateLimitState, recordRateLimitFailure } from "@/lib/request-rate-limit";
 
 interface LoginPayload {
   username?: unknown;
   password?: unknown;
 }
 
-interface LoginRateLimitEntry {
-  attempts: number;
-  firstAttemptAtMs: number;
-}
-
 const LOGIN_RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000;
 const LOGIN_RATE_LIMIT_MAX_ATTEMPTS = 5;
-const loginAttemptsByKey = new Map<string, LoginRateLimitEntry>();
+const LOGIN_RATE_LIMIT_SCOPE = "auth_login";
 
 function buildRateLimitKey(ip: string, username: string) {
   return `${ip}|${username.trim().toLowerCase()}`;
-}
-
-function getRateLimitState(key: string, nowMs: number) {
-  const entry = loginAttemptsByKey.get(key);
-  if (!entry) {
-    return { limited: false, retryAfterSeconds: 0 };
-  }
-
-  const ageMs = nowMs - entry.firstAttemptAtMs;
-  if (ageMs > LOGIN_RATE_LIMIT_WINDOW_MS) {
-    loginAttemptsByKey.delete(key);
-    return { limited: false, retryAfterSeconds: 0 };
-  }
-
-  if (entry.attempts >= LOGIN_RATE_LIMIT_MAX_ATTEMPTS) {
-    const retryAfterSeconds = Math.max(1, Math.ceil((LOGIN_RATE_LIMIT_WINDOW_MS - ageMs) / 1000));
-    return { limited: true, retryAfterSeconds };
-  }
-
-  return { limited: false, retryAfterSeconds: 0 };
-}
-
-function recordFailedAttempt(key: string, nowMs: number) {
-  const existing = loginAttemptsByKey.get(key);
-  if (!existing || nowMs - existing.firstAttemptAtMs > LOGIN_RATE_LIMIT_WINDOW_MS) {
-    loginAttemptsByKey.set(key, { attempts: 1, firstAttemptAtMs: nowMs });
-    return;
-  }
-
-  existing.attempts += 1;
-  loginAttemptsByKey.set(key, existing);
-}
-
-function clearFailedAttempts(key: string) {
-  loginAttemptsByKey.delete(key);
-}
-
-function cleanupStaleRateLimitEntries(nowMs: number) {
-  for (const [key, entry] of loginAttemptsByKey.entries()) {
-    if (nowMs - entry.firstAttemptAtMs > LOGIN_RATE_LIMIT_WINDOW_MS) {
-      loginAttemptsByKey.delete(key);
-    }
-  }
 }
 
 export async function POST(request: NextRequest) {
@@ -95,10 +48,12 @@ export async function POST(request: NextRequest) {
   const password = typeof payload.password === "string" ? payload.password.trim() : "";
   const ip = getRequestClientIp(request);
   const rateLimitKey = buildRateLimitKey(ip, username || "<empty>");
-  const nowMs = Date.now();
-
-  cleanupStaleRateLimitEntries(nowMs);
-  const rateLimitState = getRateLimitState(rateLimitKey, nowMs);
+  const rateLimitState = await getRateLimitState({
+    scope: LOGIN_RATE_LIMIT_SCOPE,
+    key: rateLimitKey,
+    windowMs: LOGIN_RATE_LIMIT_WINDOW_MS,
+    maxAttempts: LOGIN_RATE_LIMIT_MAX_ATTEMPTS,
+  });
   if (rateLimitState.limited) {
     await incrementLoginFailures(1);
     logAuthAuditEvent("login_rate_limited", request, { username, retryAfterSeconds: rateLimitState.retryAfterSeconds });
@@ -123,7 +78,11 @@ export async function POST(request: NextRequest) {
 
   if (!username || !password) {
     await incrementLoginFailures(1);
-    recordFailedAttempt(rateLimitKey, nowMs);
+    await recordRateLimitFailure({
+      scope: LOGIN_RATE_LIMIT_SCOPE,
+      key: rateLimitKey,
+      windowMs: LOGIN_RATE_LIMIT_WINDOW_MS,
+    });
     logAuthAuditEvent("login_failure", request, { username });
     const durationMs = Date.now() - startedAt;
     logStructured("warn", "admin_login_validation_failed", { requestId, route, durationMs, username });
@@ -135,14 +94,18 @@ export async function POST(request: NextRequest) {
 
   if (!verifyAdminCredentials(username, password)) {
     await incrementLoginFailures(1);
-    recordFailedAttempt(rateLimitKey, nowMs);
+    await recordRateLimitFailure({
+      scope: LOGIN_RATE_LIMIT_SCOPE,
+      key: rateLimitKey,
+      windowMs: LOGIN_RATE_LIMIT_WINDOW_MS,
+    });
     logAuthAuditEvent("login_failure", request, { username });
     const durationMs = Date.now() - startedAt;
     logStructured("warn", "admin_login_failed", { requestId, route, durationMs, username });
     return NextResponse.json({ error: "Invalid credentials." }, { status: 401 });
   }
 
-  clearFailedAttempts(rateLimitKey);
+  await clearRateLimit(LOGIN_RATE_LIMIT_SCOPE, rateLimitKey);
   logAuthAuditEvent("login_success", request, { username });
 
   const response = NextResponse.json({ ok: true });

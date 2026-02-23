@@ -1,5 +1,6 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { Prisma } from "@/generated/prisma/client";
+import { ADMIN_SESSION_COOKIE, validateAdminSessionToken } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getMakerWorksSyncTelemetry, makerWorksJobsTableExists } from "@/lib/makerworks-sync";
 
@@ -7,7 +8,11 @@ const SYNC_LAG_THRESHOLD_SECONDS = Number.parseInt(process.env.SYNC_LAG_ALERT_SE
 const CONSECUTIVE_SYNC_FAILURES_THRESHOLD = Number.parseInt(process.env.SYNC_FAILURES_ALERT_COUNT ?? "3", 10);
 const SLOW_QUERY_COUNT_THRESHOLD = Number.parseInt(process.env.SLOW_QUERY_ALERT_COUNT ?? "25", 10);
 
-export async function GET() {
+function isAdminSessionAuthorized(request: NextRequest) {
+  return validateAdminSessionToken(request.cookies.get(ADMIN_SESSION_COOKIE)?.value);
+}
+
+export async function GET(request: NextRequest) {
   const checks: Record<string, { ok: boolean; detail?: string }> = {
     db: { ok: false },
     source: { ok: false },
@@ -59,6 +64,17 @@ export async function GET() {
   }
 
   const ready = checks.db.ok && checks.source.ok;
+  if (!isAdminSessionAuthorized(request)) {
+    return NextResponse.json(
+      {
+        ok: ready,
+        status: ready ? "ready" : "not_ready",
+        timestamp: new Date().toISOString(),
+      },
+      { status: ready ? 200 : 503 },
+    );
+  }
+
   return NextResponse.json(
     {
       ok: ready,

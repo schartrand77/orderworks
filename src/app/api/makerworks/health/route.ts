@@ -1,5 +1,6 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { Prisma } from "@/generated/prisma/client";
+import { ADMIN_SESSION_COOKIE, validateAdminSessionToken } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { fetchMakerWorksStatus, CONNECTED_THRESHOLD_MINUTES } from "@/lib/makerworks-status";
 import {
@@ -10,6 +11,10 @@ import {
 import type { MakerWorksHealthPayload } from "@/types/makerworks-status";
 
 export const dynamic = "force-dynamic";
+
+function isAdminSessionAuthorized(request: NextRequest) {
+  return validateAdminSessionToken(request.cookies.get(ADMIN_SESSION_COOKIE)?.value);
+}
 
 async function gatherHealthPayload(): Promise<MakerWorksHealthPayload> {
   triggerMakerWorksSyncIfStale();
@@ -45,19 +50,44 @@ async function gatherHealthPayload(): Promise<MakerWorksHealthPayload> {
   };
 }
 
-export async function GET() {
+async function gatherPublicHealth() {
+  const status = await fetchMakerWorksStatus();
+  const ok = status.status !== "error";
+  return {
+    ok,
+    status: ok ? "ok" : "degraded",
+    timestamp: new Date().toISOString(),
+  };
+}
+
+export async function GET(request: NextRequest) {
+  if (!isAdminSessionAuthorized(request)) {
+    try {
+      const payload = await gatherPublicHealth();
+      return NextResponse.json(payload, { status: payload.ok ? 200 : 503 });
+    } catch {
+      return NextResponse.json(
+        {
+          ok: false,
+          status: "degraded",
+          timestamp: new Date().toISOString(),
+        },
+        { status: 503 },
+      );
+    }
+  }
+
   try {
     const payload = await gatherHealthPayload();
     return NextResponse.json(payload);
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "Unknown error";
+  } catch {
     return NextResponse.json(
       {
         connected: false,
         status: "error",
         lastJobReceivedAt: null,
         thresholdMinutes: CONNECTED_THRESHOLD_MINUTES,
-        error: message,
+        error: "Service check failed.",
         jobs: {
           orderworksTotal: 0,
           makerworksTotal: 0,
@@ -73,7 +103,7 @@ export async function GET() {
 
 export async function HEAD() {
   try {
-    await gatherHealthPayload();
+    await gatherPublicHealth();
     return new NextResponse(null, { status: 200 });
   } catch {
     return new NextResponse(null, { status: 500 });

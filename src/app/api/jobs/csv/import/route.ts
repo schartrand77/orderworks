@@ -8,6 +8,27 @@ import { recordJobAuditEvent } from "@/lib/job-audit";
 import { dispatchJobTransitionWebhook } from "@/lib/outbound-webhooks";
 import { prisma } from "@/lib/prisma";
 
+const CSV_IMPORT_MAX_BYTES = Number.parseInt(process.env.CSV_IMPORT_MAX_BYTES ?? "1048576", 10);
+const CSV_IMPORT_MAX_ROWS = Number.parseInt(process.env.CSV_IMPORT_MAX_ROWS ?? "1000", 10);
+const CSV_IMPORT_MAX_FIELD_LENGTH = Number.parseInt(process.env.CSV_IMPORT_MAX_FIELD_LENGTH ?? "5000", 10);
+
+function validateCsvPayloadSize(contentLengthHeader: string | null) {
+  if (!contentLengthHeader) {
+    return null;
+  }
+  const size = Number.parseInt(contentLengthHeader, 10);
+  if (!Number.isFinite(size) || size <= 0) {
+    return null;
+  }
+  if (size > CSV_IMPORT_MAX_BYTES) {
+    return NextResponse.json(
+      { error: `CSV payload exceeds ${CSV_IMPORT_MAX_BYTES} bytes.` },
+      { status: 413 },
+    );
+  }
+  return null;
+}
+
 function parseStatus(value: string | undefined) {
   const normalized = value?.trim().toLowerCase();
   if (!normalized) {
@@ -47,6 +68,11 @@ function parseFulfillmentStatus(value: string | undefined) {
 
 export async function POST(request: NextRequest) {
   return withAdminApiAuth(request, async () => {
+    const contentLengthViolation = validateCsvPayloadSize(request.headers.get("content-length"));
+    if (contentLengthViolation) {
+      return contentLengthViolation;
+    }
+
     const contentType = request.headers.get("content-type")?.toLowerCase() ?? "";
     let csvText = "";
 
@@ -55,12 +81,23 @@ export async function POST(request: NextRequest) {
       const file = formData.get("file");
       const text = formData.get("text");
       if (file instanceof File) {
+        if (file.size > CSV_IMPORT_MAX_BYTES) {
+          return NextResponse.json(
+            { error: `Uploaded CSV file exceeds ${CSV_IMPORT_MAX_BYTES} bytes.` },
+            { status: 413 },
+          );
+        }
         csvText = await file.text();
       } else if (typeof text === "string") {
         csvText = text;
       }
     } else {
       csvText = await request.text();
+    }
+
+    const csvBytes = Buffer.byteLength(csvText, "utf8");
+    if (csvBytes > CSV_IMPORT_MAX_BYTES) {
+      return NextResponse.json({ error: `CSV payload exceeds ${CSV_IMPORT_MAX_BYTES} bytes.` }, { status: 413 });
     }
 
     if (!csvText.trim()) {
@@ -70,6 +107,26 @@ export async function POST(request: NextRequest) {
     const records = parseCsv(csvText);
     if (records.length === 0) {
       return NextResponse.json({ error: "No CSV rows found." }, { status: 422 });
+    }
+    if (records.length > CSV_IMPORT_MAX_ROWS) {
+      return NextResponse.json(
+        { error: `CSV payload has ${records.length} rows; maximum allowed is ${CSV_IMPORT_MAX_ROWS}.` },
+        { status: 422 },
+      );
+    }
+
+    for (let i = 0; i < records.length; i += 1) {
+      const row = records[i] ?? {};
+      for (const [field, value] of Object.entries(row)) {
+        if (value.length > CSV_IMPORT_MAX_FIELD_LENGTH) {
+          return NextResponse.json(
+            {
+              error: `Row ${i + 2} field '${field}' exceeds ${CSV_IMPORT_MAX_FIELD_LENGTH} characters.`,
+            },
+            { status: 422 },
+          );
+        }
+      }
     }
 
     let updated = 0;

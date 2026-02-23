@@ -14,6 +14,8 @@ services:
       PORT: "3000"
       WATCHPACK_POLLING: "true"
       WATCHPACK_POLLING_INTERVAL: "1000"
+      NPM_CONFIG_PROGRESS: "false"
+      NPM_CONFIG_LOGLEVEL: "warn"
     ports:
       - "3001:3000"
     volumes:
@@ -23,9 +25,7 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
     command: >
-      bash -lc "npm install && npm run db:generate && (npm run db:migrate || (echo 'Migrate failed; running db push for local bootstrap' && npx prisma db push --accept-data-loss)) && mkdir -p .next/dev/logs && npm run dev"
-    stdin_open: true
-    tty: true
+      bash -lc "npm install --no-audit --no-fund && npm run db:generate && (npm run db:migrate || (echo 'Migrate failed; running db push for local bootstrap' && npx prisma db push --accept-data-loss)) && mkdir -p .next/dev/logs && npm run dev"
 
 volumes:
   app-node_modules:
