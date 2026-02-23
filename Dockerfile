@@ -14,15 +14,9 @@ ENV NEXT_TELEMETRY_DISABLED=1
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 ARG DATABASE_URL="postgresql://placeholder:placeholder@localhost:5432/makerworks?schema=orderworks"
-ARG ADMIN_SESSION_SECRET="build-only-admin-session-secret"
-ARG ADMIN_USERNAME="build-admin"
-ARG ADMIN_PASSWORD="build-password"
 ENV DATABASE_URL=${DATABASE_URL}
-ENV ADMIN_SESSION_SECRET=${ADMIN_SESSION_SECRET}
-ENV ADMIN_USERNAME=${ADMIN_USERNAME}
-ENV ADMIN_PASSWORD=${ADMIN_PASSWORD}
 RUN npm run db:generate
-RUN npm run build
+RUN ADMIN_SESSION_SECRET=build-only-admin-session-secret ADMIN_USERNAME=build-admin ADMIN_PASSWORD=build-password npm run build
 RUN npm prune --omit=dev
 
 FROM base AS runner
