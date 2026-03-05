@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import {
+  assertSafeRequestPayloadSize,
+  createPayloadTooLargeResponse,
+  createUnsupportedMediaTypeResponse,
   getRequestClientIp,
   issueAdminAuthCookies,
+  isJsonRequest,
   isAdminAuthConfigured,
   logAuthAuditEvent,
   verifyAdminCredentials,
@@ -18,6 +22,7 @@ interface LoginPayload {
 const LOGIN_RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000;
 const LOGIN_RATE_LIMIT_MAX_ATTEMPTS = 5;
 const LOGIN_RATE_LIMIT_SCOPE = "auth_login";
+const LOGIN_MAX_PAYLOAD_BYTES = 4 * 1024;
 
 function buildRateLimitKey(ip: string, username: string) {
   return `${ip}|${username.trim().toLowerCase()}`;
@@ -35,6 +40,14 @@ export async function POST(request: NextRequest) {
       { error: "Admin login is not configured on this deployment." },
       { status: 500 },
     );
+  }
+
+  if (!isJsonRequest(request)) {
+    return createUnsupportedMediaTypeResponse();
+  }
+
+  if (!assertSafeRequestPayloadSize(request, LOGIN_MAX_PAYLOAD_BYTES)) {
+    return createPayloadTooLargeResponse(LOGIN_MAX_PAYLOAD_BYTES);
   }
 
   let payload: LoginPayload;

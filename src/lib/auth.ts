@@ -9,6 +9,7 @@ export const ADMIN_CSRF_HEADER = "x-csrf-token";
 export const ADMIN_SESSION_MAX_AGE_SECONDS = 60 * 60 * 12; // 12 hours
 const ADMIN_SESSION_CLOCK_SKEW_SECONDS = 60;
 const AUTH_AUDIT_LOG_ENABLED = process.env.AUTH_AUDIT_LOG_ENABLED === "true";
+const TRUST_PROXY_HEADERS = process.env.TRUST_PROXY_HEADERS === "true";
 
 const ADMIN_SESSION_SECRET = process.env.ADMIN_SESSION_SECRET?.trim();
 if (!ADMIN_SESSION_SECRET) {
@@ -260,42 +261,41 @@ export function clearAdminAuthCookies(response: NextResponse, request: NextReque
 }
 
 export function getRequestClientIp(request: NextRequest) {
+  if (!TRUST_PROXY_HEADERS) {
+    return "unknown";
+  }
+
   const forwardedFor = request.headers.get("x-forwarded-for");
   if (forwardedFor) {
     const first = forwardedFor.split(",")[0]?.trim();
-    if (first) {
+    if (isValidIpHeaderValue(first)) {
       return first;
     }
   }
+
   const realIp = request.headers.get("x-real-ip")?.trim();
-  if (realIp) {
+  if (isValidIpHeaderValue(realIp)) {
     return realIp;
   }
+
   return "unknown";
 }
 
-export function logAuthAuditEvent(
-  event: AuthAuditEvent,
-  request: NextRequest,
-  details?: Record<string, string | number | boolean | null>,
-) {
-  if (!AUTH_AUDIT_LOG_ENABLED) {
-    return;
+function isValidIpHeaderValue(value?: string | null) {
+  if (!value) {
+    return false;
   }
-
-  const entry = {
-    ts: new Date().toISOString(),
-    event,
-    ip: getRequestClientIp(request),
-    path: request.nextUrl.pathname,
-    userAgent: request.headers.get("user-agent"),
-    ...details,
-  };
-  console.info(`[auth-audit] ${JSON.stringify(entry)}`);
+  const trimmed = value.trim();
+  if (trimmed.length === 0 || trimmed.length > 64) {
+    return false;
+  }
+  // Allow IPv4 / IPv6 literals and optional IPv6 zone id.
+  return /^[a-fA-F0-9:.%]+$/.test(trimmed);
 }
 
 export const __authTestUtils = {
   safeCompare,
+  isValidIpHeaderValue,
 };
 
 function extractCookieValue(cookieHeader: string | null, name: string) {
@@ -320,4 +320,56 @@ export async function readAdminSessionTokenFromHeaders() {
   const headerList = await headers();
   const cookieHeader = headerList.get("cookie");
   return extractCookieValue(cookieHeader, ADMIN_SESSION_COOKIE);
+}
+
+export function getTrustProxyHeadersEnabled() {
+  return TRUST_PROXY_HEADERS;
+}
+
+export function assertSafeRequestPayloadSize(request: NextRequest, maxBytes: number) {
+  const contentLength = request.headers.get("content-length");
+  if (!contentLength) {
+    return true;
+  }
+  const size = Number.parseInt(contentLength, 10);
+  if (!Number.isFinite(size) || size < 0) {
+    return false;
+  }
+  return size <= maxBytes;
+}
+
+export function createPayloadTooLargeResponse(maxBytes: number) {
+  return NextResponse.json(
+    { error: `Payload too large. Max allowed is ${maxBytes} bytes.` },
+    { status: 413 },
+  );
+}
+
+export function createUnsupportedMediaTypeResponse() {
+  return NextResponse.json({ error: "Content-Type must be application/json." }, { status: 415 });
+}
+
+export function isJsonRequest(request: NextRequest) {
+  const contentType = request.headers.get("content-type")?.split(";")[0]?.trim().toLowerCase();
+  return contentType === "application/json";
+}
+
+export function logAuthAuditEvent(
+  event: AuthAuditEvent,
+  request: NextRequest,
+  details?: Record<string, string | number | boolean | null>,
+) {
+  if (!AUTH_AUDIT_LOG_ENABLED) {
+    return;
+  }
+
+  const entry = {
+    ts: new Date().toISOString(),
+    event,
+    ip: getRequestClientIp(request),
+    path: request.nextUrl.pathname,
+    userAgent: request.headers.get("user-agent"),
+    ...details,
+  };
+  console.info(`[auth-audit] ${JSON.stringify(entry)}`);
 }
