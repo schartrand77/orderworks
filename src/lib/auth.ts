@@ -260,7 +260,7 @@ export function clearAdminAuthCookies(response: NextResponse, request: NextReque
   });
 }
 
-export function getRequestClientIp(request: NextRequest) {
+export function getRequestClientIp(request: NextRequest): string {
   if (!TRUST_PROXY_HEADERS) {
     return "unknown";
   }
@@ -268,13 +268,13 @@ export function getRequestClientIp(request: NextRequest) {
   const forwardedFor = request.headers.get("x-forwarded-for");
   if (forwardedFor) {
     const first = forwardedFor.split(",")[0]?.trim();
-    if (isValidIpHeaderValue(first)) {
+    if (first && isValidIpHeaderValue(first)) {
       return first;
     }
   }
 
   const realIp = request.headers.get("x-real-ip")?.trim();
-  if (isValidIpHeaderValue(realIp)) {
+  if (realIp && isValidIpHeaderValue(realIp)) {
     return realIp;
   }
 
