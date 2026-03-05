@@ -83,6 +83,8 @@ Email receipts (optional):
 
 Docker startup (optional):
 - `SKIP_DB_MIGRATE`: Set to `1` to skip automatic migrations in the Docker entrypoint.
+- `PRISMA_AUTO_RESOLVE_FAILED_MIGRATIONS`: Set to `1` to auto-run `prisma migrate resolve --rolled-back` on startup when `db:migrate` fails.
+- `PRISMA_FAILED_MIGRATION_NAME`: Migration name to resolve when auto-resolve is enabled (example: `0032_job_payment_fulfillment`).
 
 ## Using the dashboard
 
@@ -128,6 +130,24 @@ This runs:
 A production-ready `Dockerfile` is included. The container runs migrations on startup unless you set `SKIP_DB_MIGRATE=1`.
 
 Unraid users can import the template at `unraid/orderworks.xml` and fill in the same environment variables.
+
+## Recovering from Prisma P3009
+
+If startup fails with `Error: P3009`, Prisma found a failed migration in your target database and stops applying new migrations.
+
+1) Mark the failed migration as rolled back (replace the name if different):
+```bash
+npx prisma migrate resolve --rolled-back 0032_job_payment_fulfillment
+```
+
+2) Re-run deploy:
+```bash
+npm run db:migrate
+```
+
+For Docker startup, you can also set:
+- `PRISMA_AUTO_RESOLVE_FAILED_MIGRATIONS=1`
+- `PRISMA_FAILED_MIGRATION_NAME=0032_job_payment_fulfillment`
 
 ## MakerWorks database access
 

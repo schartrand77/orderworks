@@ -3,6 +3,9 @@
 FROM node:20-bookworm-slim AS base
 ENV NEXT_TELEMETRY_DISABLED=1
 WORKDIR /app
+RUN apt-get update -y \
+  && apt-get install -y --no-install-recommends openssl \
+  && rm -rf /var/lib/apt/lists/*
 
 FROM base AS deps
 COPY package.json package-lock.json ./
