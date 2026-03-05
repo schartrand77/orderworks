@@ -91,7 +91,7 @@ Docker startup (optional):
 - Filter jobs by status or date.
 - Open a job to review details and mark it complete.
 - Reorder jobs in the queue with the Move Up / Move Down controls.
-- Use **Send to slicer** to open Bambu Studio on the viewing workstation.
+- Use **Open in PrintLab** to open your PrintLab dashboard for the selected model (set `PRINTLAB_BASE_URL`, optional `PRINTLAB_PRINTER_ID`).
 
 ## Email receipts
 
