@@ -37,8 +37,18 @@ async function ensureMetricsRow() {
   );
   await prisma.$executeRaw(
     Prisma.sql`
-      INSERT INTO orderworks."internal_metrics_state" ("singleton_key")
-      VALUES ('default')
+      INSERT INTO orderworks."internal_metrics_state" (
+        "singleton_key",
+        "login_failures_total",
+        "queue_mutation_total",
+        "queue_mutation_duration_ms_sum",
+        "queue_mutation_duration_ms_max",
+        "sync_rows_total",
+        "sync_duration_ms_total",
+        "created_at",
+        "updated_at"
+      )
+      VALUES ('default', 0, 0, 0, 0, 0, 0, NOW(), NOW())
       ON CONFLICT ("singleton_key") DO NOTHING
     `,
   );

@@ -265,8 +265,16 @@ async function ensureSyncStateRow() {
   );
   await prisma.$executeRaw(
     Prisma.sql`
-      INSERT INTO orderworks."makerworks_sync_state" ("singleton_key")
-      VALUES ('default')
+      INSERT INTO orderworks."makerworks_sync_state" (
+        "singleton_key",
+        "last_sync_processed",
+        "consecutive_failures",
+        "last_slow_query_count",
+        "slow_query_count_total",
+        "created_at",
+        "updated_at"
+      )
+      VALUES ('default', 0, 0, 0, 0, NOW(), NOW())
       ON CONFLICT ("singleton_key") DO NOTHING
     `,
   );

@@ -74,7 +74,6 @@ model Job {
   @@index([queuePosition])
 }
 
-<<<<<<< HEAD
 model AccountingAccount {
   id          String      @id @default(cuid())
   code        String      @unique
@@ -126,7 +125,8 @@ model JournalLine {
   @@map("journal_lines")
   @@index([journalEntryId])
   @@index([accountId])
-=======
+}
+
 model ArchivedJob {
   id                 String            @id
   paymentIntentId    String            @unique @map("payment_intent_id")
@@ -209,5 +209,4 @@ model InternalMetricsState {
   updatedAt                  DateTime @updatedAt @map("updated_at")
 
   @@map("internal_metrics_state")
->>>>>>> 74913058ebc11479db0125af5717291a7b92ab48
 }
