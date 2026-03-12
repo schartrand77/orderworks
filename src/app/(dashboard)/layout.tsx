@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { LogoutButton } from "@/components/logout-button";
 import { readAdminSessionTokenFromHeaders, validateAdminSessionToken } from "@/lib/auth";
@@ -19,14 +20,22 @@ export default async function DashboardLayout({ children }: { children: ReactNod
           <div className="flex flex-wrap items-center justify-between gap-3">
             <p className="text-2xl font-semibold tracking-wide text-zinc-50">OrderWorks Admin</p>
             <div className="flex items-center gap-3">
-              <span className="rounded-full border border-white/10 px-3 py-1 text-xs font-medium text-zinc-300">
-                Jobs dashboard
-              </span>
+              <nav className="flex items-center gap-2 text-xs font-medium text-zinc-300">
+                <Link className="rounded-full border border-white/10 px-3 py-1 transition hover:border-white/30 hover:text-white" href="/">
+                  Jobs
+                </Link>
+                <Link
+                  className="rounded-full border border-white/10 px-3 py-1 transition hover:border-white/30 hover:text-white"
+                  href="/accounting"
+                >
+                  Accounting
+                </Link>
+              </nav>
               <LogoutButton />
             </div>
           </div>
           <p className="text-sm text-zinc-400">
-            Intake, prioritize, and complete MakerWorks fabrication requests.
+            Intake, billing, and accounting for MakerWorks fabrication requests.
           </p>
         </div>
       </header>

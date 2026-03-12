@@ -23,35 +23,105 @@ enum FulfillmentStatus {
   PICKED_UP @map("picked_up")
 }
 
+enum AccountType {
+  ASSET     @map("asset")
+  LIABILITY @map("liability")
+  EQUITY    @map("equity")
+  REVENUE   @map("revenue")
+  EXPENSE   @map("expense")
+}
+
+enum JournalSourceType {
+  SYSTEM    @map("system")
+  JOB       @map("job")
+  PAYMENT   @map("payment")
+  INVOICE   @map("invoice")
+  ADJUSTMENT @map("adjustment")
+}
+
 model Job {
-  id               String     @id
-  paymentIntentId  String     @unique
-  totalCents       Int
-  currency         String
-  lineItems        Json
-  shipping         Json?
-  metadata         Json?
-  userId           String?
-  customerEmail    String?
+  id                  String     @id
+  paymentIntentId     String     @unique
+  totalCents          Int
+  currency            String
+  lineItems           Json
+  shipping            Json?
+  metadata            Json?
+  userId              String?
+  customerEmail       String?
   makerworksCreatedAt DateTime @map("makerworks_created_at")
   makerworksUpdatedAt DateTime @map("makerworks_updated_at")
-  status           JobStatus  @default(PENDING)
-  notes            String?
-  paymentMethod    String?    @map("payment_method")
-  paymentStatus    String?    @map("payment_status")
-  receiptSentAt    DateTime?  @map("receipt_sent_at")
-  receiptSendCount Int        @default(0) @map("receipt_send_count")
-  invoiceSentAt    DateTime?  @map("invoice_sent_at")
-  invoiceSendCount Int        @default(0) @map("invoice_send_count")
+  status              JobStatus  @default(PENDING)
+  notes               String?
+  paymentMethod       String?    @map("payment_method")
+  paymentStatus       String?    @map("payment_status")
+  receiptSentAt       DateTime?  @map("receipt_sent_at")
+  receiptSendCount    Int        @default(0) @map("receipt_send_count")
+  invoiceSentAt       DateTime?  @map("invoice_sent_at")
+  invoiceSendCount    Int        @default(0) @map("invoice_send_count")
   fulfillmentStatus FulfillmentStatus @default(PENDING) @map("fulfillment_status")
-  fulfilledAt      DateTime?  @map("fulfilled_at")
-  queuePosition    Int        @default(0) @map("queue_position")
-  createdAt        DateTime   @default(now())
-  updatedAt        DateTime   @updatedAt
-  viewedAt         DateTime?  @map("viewed_at")
+  fulfilledAt         DateTime?  @map("fulfilled_at")
+  queuePosition       Int        @default(0) @map("queue_position")
+  createdAt           DateTime   @default(now())
+  updatedAt           DateTime   @updatedAt
+  viewedAt            DateTime?  @map("viewed_at")
+  journalEntries      JournalEntry[]
 
   @@map("jobs")
   @@index([status])
   @@index([makerworksCreatedAt])
   @@index([queuePosition])
+}
+
+model AccountingAccount {
+  id          String      @id @default(cuid())
+  code        String      @unique
+  name        String
+  type        AccountType
+  description String?
+  isSystem    Boolean     @default(false) @map("is_system")
+  isActive    Boolean     @default(true) @map("is_active")
+  createdAt   DateTime    @default(now()) @map("created_at")
+  updatedAt   DateTime    @updatedAt @map("updated_at")
+  lines       JournalLine[]
+
+  @@map("accounting_accounts")
+  @@index([type])
+  @@index([isActive])
+}
+
+model JournalEntry {
+  id                 String            @id @default(cuid())
+  entryDate          DateTime          @map("entry_date")
+  description        String
+  sourceType         JournalSourceType @map("source_type")
+  sourceId           String            @map("source_id")
+  reference          String?
+  currency           String
+  jobPaymentIntentId String?           @map("job_payment_intent_id")
+  createdAt          DateTime          @default(now()) @map("created_at")
+  updatedAt          DateTime          @updatedAt @map("updated_at")
+  job                Job?              @relation(fields: [jobPaymentIntentId], references: [paymentIntentId], onDelete: SetNull)
+  lines              JournalLine[]
+
+  @@unique([sourceType, sourceId])
+  @@map("journal_entries")
+  @@index([entryDate])
+  @@index([jobPaymentIntentId])
+}
+
+model JournalLine {
+  id             String            @id @default(cuid())
+  journalEntryId String            @map("journal_entry_id")
+  accountId      String            @map("account_id")
+  description    String?
+  debitCents     Int               @default(0) @map("debit_cents")
+  creditCents    Int               @default(0) @map("credit_cents")
+  createdAt      DateTime          @default(now()) @map("created_at")
+  journalEntry   JournalEntry      @relation(fields: [journalEntryId], references: [id], onDelete: Cascade)
+  account        AccountingAccount @relation(fields: [accountId], references: [id], onDelete: Restrict)
+
+  @@map("journal_lines")
+  @@index([journalEntryId])
+  @@index([accountId])
 }
