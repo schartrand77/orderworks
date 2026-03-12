@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState, type ReactNode } from "react";
-import { handleUnauthorizedResponse } from "@/lib/client-auth";
+import { buildCsrfHeaders, handleUnauthorizedResponse } from "@/lib/client-auth";
 
 interface Props {
   paymentIntentId: string;
@@ -14,7 +14,7 @@ interface Props {
 async function moveJob(paymentIntentId: string, direction: "up" | "down") {
   const response = await fetch(`/api/jobs/${encodeURIComponent(paymentIntentId)}/queue`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: buildCsrfHeaders({ "Content-Type": "application/json" }),
     body: JSON.stringify({ direction }),
   });
 

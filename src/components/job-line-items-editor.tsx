@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useNotifications } from "@/components/notifications-provider";
-import { handleUnauthorizedResponse } from "@/lib/client-auth";
+import { buildCsrfHeaders, handleUnauthorizedResponse } from "@/lib/client-auth";
 
 interface Props {
   paymentIntentId: string;
@@ -71,7 +71,7 @@ export function JobLineItemsEditor({ paymentIntentId, lineItems }: Props) {
     try {
       const response = await fetch(`/api/jobs/${encodeURIComponent(paymentIntentId)}`, {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        headers: buildCsrfHeaders({ "Content-Type": "application/json" }),
         body: JSON.stringify({ lineItems: parsed }),
       });
 

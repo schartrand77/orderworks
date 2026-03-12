@@ -8,7 +8,9 @@ export interface ModelFile {
   label: string;
 }
 
-export function extractModelFiles(job: Job): ModelFile[] {
+type JobModelFileInput = Pick<Job, "metadata" | "lineItems" | "notes">;
+
+export function extractModelFiles(job: JobModelFileInput): ModelFile[] {
   const sources: Array<{ value: unknown; label?: string }> = [
     { value: job.metadata ?? null },
     { value: job.lineItems ?? null, label: "Line items" },
@@ -33,8 +35,20 @@ export function extractModelFiles(job: Job): ModelFile[] {
   return files;
 }
 
-export function buildBambuStudioLink(fileUrl: string) {
-  return `bambu-studio://project/open?url=${encodeURIComponent(fileUrl)}`;
+export function buildPrintLabLink(fileUrl: string) {
+  const configuredBaseUrl = process.env.PRINTLAB_BASE_URL?.trim();
+  const rawBaseUrl = configuredBaseUrl && configuredBaseUrl.length > 0 ? configuredBaseUrl : "http://localhost:8080";
+  const normalizedBaseUrl = /^https?:\/\//i.test(rawBaseUrl) ? rawBaseUrl : `http://${rawBaseUrl}`;
+  const printerId = process.env.PRINTLAB_PRINTER_ID?.trim();
+
+  try {
+    const pathname = printerId ? `/printer/${encodeURIComponent(printerId)}` : "/";
+    const destination = new URL(pathname, normalizedBaseUrl);
+    destination.searchParams.set("model_url", fileUrl);
+    return destination.toString();
+  } catch {
+    return normalizedBaseUrl;
+  }
 }
 
 function collectModelFiles(value: unknown, labelHint?: string): ModelFile[] {

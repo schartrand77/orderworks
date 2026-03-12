@@ -3,6 +3,9 @@
 FROM node:20-bookworm-slim AS base
 ENV NEXT_TELEMETRY_DISABLED=1
 WORKDIR /app
+RUN apt-get update -y \
+  && apt-get install -y --no-install-recommends openssl \
+  && rm -rf /var/lib/apt/lists/*
 
 FROM base AS deps
 COPY package.json package-lock.json ./
@@ -16,7 +19,7 @@ COPY . .
 ARG DATABASE_URL="postgresql://placeholder:placeholder@localhost:5432/makerworks?schema=orderworks"
 ENV DATABASE_URL=${DATABASE_URL}
 RUN npm run db:generate
-RUN npm run build
+RUN ADMIN_SESSION_SECRET=build-only-admin-session-secret ADMIN_USERNAME=build-admin ADMIN_PASSWORD=build-password npm run build
 RUN npm prune --omit=dev
 
 FROM base AS runner

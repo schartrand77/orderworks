@@ -20,6 +20,7 @@ export default async function DashboardLayout({ children }: { children: ReactNod
           <div className="flex flex-wrap items-center justify-between gap-3">
             <p className="text-2xl font-semibold tracking-wide text-zinc-50">OrderWorks Admin</p>
             <div className="flex items-center gap-3">
+<<<<<<< HEAD
               <nav className="flex items-center gap-2 text-xs font-medium text-zinc-300">
                 <Link className="rounded-full border border-white/10 px-3 py-1 transition hover:border-white/30 hover:text-white" href="/">
                   Jobs
@@ -29,6 +30,26 @@ export default async function DashboardLayout({ children }: { children: ReactNod
                   href="/accounting"
                 >
                   Accounting
+=======
+              <nav className="flex flex-wrap items-center gap-2">
+                <Link
+                  href="/"
+                  className="rounded-full border border-white/10 px-3 py-1 text-xs font-medium text-zinc-300 transition hover:border-white/30 hover:text-white"
+                >
+                  Queue
+                </Link>
+                <Link
+                  href="/ops"
+                  className="rounded-full border border-white/10 px-3 py-1 text-xs font-medium text-zinc-300 transition hover:border-white/30 hover:text-white"
+                >
+                  Ops
+                </Link>
+                <Link
+                  href="/insights"
+                  className="rounded-full border border-white/10 px-3 py-1 text-xs font-medium text-zinc-300 transition hover:border-white/30 hover:text-white"
+                >
+                  Insights
+>>>>>>> 74913058ebc11479db0125af5717291a7b92ab48
                 </Link>
               </nav>
               <LogoutButton />

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { syncMakerWorksJobs } from "@/lib/makerworks-sync";
+import { triggerMakerWorksSyncIfStale } from "@/lib/makerworks-sync";
 import { JobDeleteButton } from "@/components/job-delete-button";
 import { JobDetail } from "@/components/job-detail";
 import { JobLineItemsEditor } from "@/components/job-line-items-editor";
@@ -10,6 +10,8 @@ import { SendInvoiceButton } from "@/components/send-invoice-button";
 import { TestEmailForm } from "@/components/test-email-form";
 import { hasOutstandingBalance } from "@/lib/job-display";
 import { formatDate } from "@/lib/format";
+import { JobAuditTimeline } from "@/components/job-audit-timeline";
+import { listJobAuditEvents, recordJobAuditEvent } from "@/lib/job-audit";
 
 interface PageProps {
   params: Promise<{ paymentIntentId: string }>;
@@ -18,17 +20,26 @@ interface PageProps {
 export default async function JobDetailPage({ params }: PageProps) {
   const resolvedParams = await params;
   const paymentIntentId = decodeURIComponent(resolvedParams.paymentIntentId);
-  await syncMakerWorksJobs();
+  triggerMakerWorksSyncIfStale();
   const job = await prisma.job.findUnique({ where: { paymentIntentId } });
 
   if (!job) {
     notFound();
   }
 
-  await prisma.job.updateMany({
+  const viewed = await prisma.job.updateMany({
     where: { paymentIntentId, viewedAt: null },
     data: { viewedAt: new Date() },
   });
+  if (viewed.count > 0) {
+    await recordJobAuditEvent({
+      jobId: job.id,
+      paymentIntentId: job.paymentIntentId,
+      eventType: "job_viewed",
+      actor: "admin",
+    });
+  }
+  const auditEvents = await listJobAuditEvents(paymentIntentId, 120);
   const outstandingBalance = hasOutstandingBalance(job);
   const canSendInvoice = outstandingBalance && Boolean(job.customerEmail);
   const receiptStatus = job.receiptSentAt
@@ -96,6 +107,7 @@ export default async function JobDetailPage({ params }: PageProps) {
         />
         <TestEmailForm defaultRecipient={job.customerEmail} />
       </section>
+      <JobAuditTimeline events={auditEvents} />
       <section className="space-y-3 rounded-2xl border border-red-500/30 bg-red-500/5 p-6 shadow-[0_20px_60px_rgba(0,0,0,0.35)]">
         <div className="space-y-1">
           <h2 className="text-lg font-semibold text-white">Delete job</h2>

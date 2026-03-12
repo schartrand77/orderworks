@@ -1,11 +1,11 @@
 import { prisma } from "@/lib/prisma";
 import type { MakerWorksStatusPayload } from "@/types/makerworks-status";
-import { syncMakerWorksJobs } from "@/lib/makerworks-sync";
+import { triggerMakerWorksSyncIfStale } from "@/lib/makerworks-sync";
 
 export const CONNECTED_THRESHOLD_MINUTES = 15;
 
 export async function fetchMakerWorksStatus(): Promise<MakerWorksStatusPayload> {
-  await syncMakerWorksJobs();
+  triggerMakerWorksSyncIfStale();
   const latestJob = await prisma.job.findFirst({
     orderBy: { makerworksCreatedAt: "desc" },
     select: { makerworksCreatedAt: true },

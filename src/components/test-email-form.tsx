@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useNotifications } from "@/components/notifications-provider";
-import { handleUnauthorizedResponse } from "@/lib/client-auth";
+import { buildCsrfHeaders, handleUnauthorizedResponse } from "@/lib/client-auth";
 
 interface Props {
   defaultRecipient?: string | null;
@@ -27,7 +27,7 @@ export function TestEmailForm({ defaultRecipient }: Props) {
     try {
       const response = await fetch("/api/email/test", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: buildCsrfHeaders({ "Content-Type": "application/json" }),
         body: JSON.stringify({ to: trimmedRecipient }),
       });
 

@@ -8,6 +8,29 @@ export function ServiceWorkerRegister() {
       return;
     }
 
+    if (process.env.NODE_ENV !== "production") {
+      void navigator.serviceWorker
+        .getRegistrations()
+        .then(async (registrations) => {
+          await Promise.all(registrations.map((registration) => registration.unregister()));
+        })
+        .catch((error) => {
+          console.warn("Service worker cleanup failed in development:", error);
+        });
+
+      if ("caches" in window) {
+        void caches
+          .keys()
+          .then(async (keys) => {
+            await Promise.all(keys.map((key) => caches.delete(key)));
+          })
+          .catch((error) => {
+            console.warn("Cache cleanup failed in development:", error);
+          });
+      }
+      return;
+    }
+
     if (!window.isSecureContext) {
       console.warn(
         `[PWA] Service workers require a secure context. Open this app on https:// or http://localhost (current origin: ${window.location.origin}).`,

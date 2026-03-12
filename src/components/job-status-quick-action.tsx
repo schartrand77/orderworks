@@ -5,7 +5,7 @@ import type { JobStatus } from "@/generated/prisma/enums";
 import { STATUS_LABELS, type StatusQueryValue } from "@/lib/format";
 import { JobStatusBadge } from "@/components/job-status-badge";
 import { useNotifications } from "@/components/notifications-provider";
-import { handleUnauthorizedResponse } from "@/lib/client-auth";
+import { buildCsrfHeaders, handleUnauthorizedResponse } from "@/lib/client-auth";
 
 interface Props {
   paymentIntentId: string;
@@ -40,7 +40,7 @@ export function JobStatusQuickAction({ paymentIntentId, initialStatus, className
     try {
       const response = await fetch(`/api/jobs/${encodeURIComponent(paymentIntentId)}`, {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        headers: buildCsrfHeaders({ "Content-Type": "application/json" }),
         body: JSON.stringify({ status: nextValue }),
       });
       if (handleUnauthorizedResponse(response.status)) {

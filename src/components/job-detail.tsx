@@ -3,7 +3,7 @@ import type { Job } from "@/generated/prisma/client";
 import { FulfillmentStatus as FulfillmentStatusEnum } from "@/generated/prisma/enums";
 import { formatCurrency, formatDate, FULFILLMENT_STATUS_LABELS } from "@/lib/format";
 import { deriveApproximatePrintTime } from "@/lib/print-time";
-import { buildBambuStudioLink, extractModelFiles } from "@/lib/model-files";
+import { buildPrintLabLink, extractModelFiles } from "@/lib/model-files";
 import { getCustomerName, getPaymentMethodLabel, getPaymentStatusLabel, hasOutstandingBalance } from "@/lib/job-display";
 import { JobStatusBadge } from "@/components/job-status-badge";
 
@@ -178,19 +178,21 @@ export function JobDetail({ job }: Props) {
                     Download
                   </a>
                   <a
-                    href={buildBambuStudioLink(file.url)}
+                    href={buildPrintLabLink(file.url)}
+                    target="_blank"
+                    rel="noreferrer"
                     className="rounded-md bg-gradient-to-r from-[#62f1ff] to-[#4ca0ff] px-3 py-1.5 text-xs font-semibold text-[#050505] shadow-[0_15px_40px_rgba(0,0,0,0.55)] transition hover:brightness-110"
                   >
-                    Send to slicer
+                    Open in PrintLab
                   </a>
                 </div>
               </div>
             ))}
           </div>
           <p className="mt-2 text-xs text-zinc-500">
-            Bambu Studio opens on the computer you&apos;re using right now (the link is handled by your browser via{" "}
-            <code className="mx-1 rounded bg-black/40 px-1 py-0.5 text-[0.6rem] text-white">bambu-studio://</code>). No
-            tooling runs inside the OrderWorks container - approve any connection prompt that appears in your local slicer.
+            This opens your PrintLab dashboard (<code className="mx-1 rounded bg-black/40 px-1 py-0.5 text-[0.6rem] text-white">PRINTLAB_BASE_URL</code>
+            , default <code className="mx-1 rounded bg-black/40 px-1 py-0.5 text-[0.6rem] text-white">http://localhost:8080</code>). PrintLab starts jobs from
+            printer SD-card paths, so download/upload the model there before submitting.
           </p>
         </div>
       ) : null}
